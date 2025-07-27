@@ -36,7 +36,7 @@ impl Chip8Sys {
 impl Chip8Sys {
     pub fn display_buffer(&self) -> Vec<u32> {
         // Convert the 64x32 pixel frame_buffer to the 640x320 computer display
-
+        /*
         println!("frame_buffer");
         for (i, pixel_col) in self.frame_buffer.iter().enumerate() {
             print!("{:2}: ", i);
@@ -50,24 +50,34 @@ impl Chip8Sys {
             println!();
         }
         println!();
+        */
 
+        // build all the rows
         let mut result = Vec::new();
-        for col in self.frame_buffer.iter() {
-            for row in col {
-                if *row {
-                    result.append(&mut vec![PIXEL_COLOR; 100]);
+        for row in self.frame_buffer.iter() {
+            let mut row_display = Vec::new();
+            for col in row {
+                if *col {
+                    row_display.append(&mut vec![PIXEL_COLOR; 20]);
                 } else {
-                    result.append(&mut vec![0; 100]);
+                    row_display.append(&mut vec![0; 20]);
                 }
             }
+            result.append(&mut vec![row_display; 20].concat());
         }
         result
     }
     pub fn draw_nibble(&mut self, x: usize, y: usize, nibble: Nibble) {
-        self.frame_buffer[x][y] = nibble.0;
-        self.frame_buffer[x + 1][y] = nibble.1;
-        self.frame_buffer[x + 2][y] = nibble.2;
-        self.frame_buffer[x + 3][y] = nibble.3;
+        println!("frame_buffer x: {}", x);
+        println!("frame_buffer y: {}", y);
+        println!(
+            "nibble 0-3: {}{}{}{}",
+            nibble.0 as u8, nibble.1 as u8, nibble.2 as u8, nibble.3 as u8
+        );
+        self.frame_buffer[y][x] = nibble.0;
+        self.frame_buffer[y][x + 1] = nibble.1;
+        self.frame_buffer[y][x + 2] = nibble.2;
+        self.frame_buffer[y][x + 3] = nibble.3;
     }
     pub fn draw_sprite(&mut self, x: usize, y: usize, sprite: Sprite) {
         self.draw_nibble(x, y, sprite.0);
@@ -81,11 +91,12 @@ impl Chip8Sys {
 pub struct Nibble(bool, bool, bool, bool);
 impl Nibble {
     fn from_u8(byte: u8) -> Nibble {
+        println!("nibble byte: {:08b}", byte);
         Nibble(
-            byte & 0b1 == 1,
-            byte & 0b10 == 1,
-            byte & 0b100 == 1,
-            byte & 0b1000 == 1,
+            byte & 0b1000_0000 == 128,
+            byte & 0b0100_0000 == 64,
+            byte & 0b0010_0000 == 32,
+            byte & 0b0001_0000 == 16,
         )
     }
 }

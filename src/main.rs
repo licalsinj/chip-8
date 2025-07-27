@@ -1,10 +1,10 @@
-use chip8::{Chip8Sys, Nibble, Sprite};
+use chip8::{Chip8Sys, Sprite};
 use minifb::{Key, ScaleMode, Window, WindowOptions};
 
 mod chip8;
 
-const WIDTH: usize = 640;
-const HEIGHT: usize = 320;
+const WIDTH: usize = 640 * 2;
+const HEIGHT: usize = 320 * 2;
 
 fn main() {
     const FONT: [u8; 80] = [
@@ -26,29 +26,21 @@ fn main() {
         0xF0, 0x80, 0xF0, 0x80, 0x80, // F
     ];
 
-    // let mut noise;
-    // let mut carry;
-    // let mut seed = 0xbeefu32;
-
     let mut buffer = vec![0; WIDTH * HEIGHT];
     let mut game = Chip8Sys::new();
 
     // load the font in memeory
-    for i in 0x050..0x09F {
+    for i in 0x050..0x0A0 {
         game.memory[i] = FONT[i - 0x050];
     }
-    game.frame_buffer[0][0] = true;
-    game.frame_buffer[1][1] = true;
+    // Test the Drawing of Sprite characters
     /*
+    draw_all_characters(&mut game, 0x050, 5, 0, 0);
+    draw_all_characters(&mut game, 0x09B, -5, 0, 12);
     game.draw_sprite(
-        1,
-        1,
-        Sprite::from_vec_u8(&vec![0xF0; 5]), //Sprite::from_vec_u8(&game.memory[0x050..0x055].to_vec()),
-    );
-    game.draw_sprite(
-        10,
-        10,
-        Sprite::from_vec_u8(&game.memory[0x055..0x60].to_vec()),
+        25,
+        18,
+        Sprite::from_vec_u8(&game.memory[0x9B..0xA0].to_vec()),
     );
     */
 
@@ -69,37 +61,35 @@ fn main() {
     while window.is_open() && !window.is_key_down(Key::Escape) {
         buffer = game.display_buffer();
         window.update_with_buffer(&buffer, WIDTH, HEIGHT).unwrap();
+        // break;
     }
 }
 
-/*
-fn print_byte_stream(b_s: Vec<char>, col: u8, div: u8) {
-    let mut counter: u8 = 0;
-    let mut div_counter: i8 = 0;
-
-    for c in b_s.iter() {
-        if counter % col == 0 {
-            print!("{:0>2} - ", counter / col);
-        }
-        print!("{}", c.to_string());
-        if div != 0 && (div_counter % (div as i8)) == (div as i8 - 1) {
-            print!(" ");
-            div_counter = -1;
-        }
-        if counter % col == col - 1 {
-            println!("");
-            div_counter = -1;
-        }
-        // This will cause the row counter to reset.
-        // I could add a special row counter var for that
-        // but I don't think that's important right now
-        if counter == u8::MAX {
-            counter = 0;
+fn draw_all_characters(game: &mut Chip8Sys, sm: i128, increment: i128, x: u8, y: u8) {
+    // println!();
+    let mut start_memory = sm as usize;
+    let mut count = 0;
+    let mut x_counter = x as usize;
+    let mut y_counter = y as usize;
+    while count <= 0xF {
+        let end_memory = (start_memory + 5) as usize;
+        // println!("start mem: {:02x}", start_memory);
+        // println!("end mem:   {:02x}", end_memory);
+        game.draw_sprite(
+            x_counter,
+            y_counter,
+            Sprite::from_vec_u8(&game.memory[start_memory..end_memory].to_vec()),
+        );
+        if start_memory as i128 + increment > 0 {
+            start_memory = (start_memory as i128 + increment) as usize;
         } else {
-            counter += 1;
+            start_memory = 0;
         }
-        div_counter += 1;
+        x_counter += 5;
+        if x_counter > 64 {
+            y_counter += 6;
+            x_counter = 0;
+        }
+        count += 1;
     }
-    println!();
 }
-*/
