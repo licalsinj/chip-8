@@ -1,12 +1,15 @@
 use chip8::{Chip8Sys, Sprite};
 use minifb::{Key, ScaleMode, Window, WindowOptions};
+use std::{thread, time};
 
 mod chip8;
+mod decode;
 
 const WIDTH: usize = 640 * 2;
 const HEIGHT: usize = 320 * 2;
 
 fn main() {
+    // this is the built in Chip-8 font that Roms expect to access
     const FONT: [u8; 80] = [
         0xF0, 0x90, 0x90, 0x90, 0xF0, // 0
         0x20, 0x60, 0x20, 0x20, 0x70, // 1
@@ -33,8 +36,12 @@ fn main() {
     for i in 0x050..0x0A0 {
         game.memory[i] = FONT[i - 0x050];
     }
+
+    // load the ROM from Disc
+    load_rom(&mut game);
+
     // Test the Drawing of Sprite characters
-    /*
+    // /*
     draw_all_characters(&mut game, 0x050, 5, 0, 0);
     draw_all_characters(&mut game, 0x09B, -5, 0, 12);
     game.draw_sprite(
@@ -42,8 +49,7 @@ fn main() {
         18,
         Sprite::from_vec_u8(&game.memory[0x9B..0xA0].to_vec()),
     );
-    */
-
+    // */
     let mut window = Window::new(
         "Chip 8 - Press ESC to exit",
         WIDTH,
@@ -61,7 +67,8 @@ fn main() {
     while window.is_open() && !window.is_key_down(Key::Escape) {
         buffer = game.display_buffer();
         window.update_with_buffer(&buffer, WIDTH, HEIGHT).unwrap();
-        // break;
+        thread::sleep(time::Duration::from_millis(200));
+        game.run();
     }
 }
 
@@ -92,4 +99,21 @@ fn draw_all_characters(game: &mut Chip8Sys, sm: i128, increment: i128, x: u8, y:
         }
         count += 1;
     }
+}
+fn load_rom(game: &mut Chip8Sys) {
+    // clear screen
+    game.memory[0x200] = 0x00;
+    game.memory[0x201] = 0xE0;
+    // draw whole screen
+    game.memory[0x202] = 0xD1;
+    game.memory[0x203] = 0x11;
+    // fill screen
+    game.memory[0x204] = 0x20;
+    game.memory[0x205] = 0x00;
+    // draw whole screen
+    game.memory[0x206] = 0xDF;
+    game.memory[0x207] = 0xFF;
+    // jump to start
+    game.memory[0x208] = 0x12;
+    game.memory[0x209] = 0x00;
 }

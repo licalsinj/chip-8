@@ -1,5 +1,3 @@
-use std::fmt::Display;
-
 const EMPTY_MEMORY: [u8; 4096] = [0; 4096];
 const EMPTY_REGISTER: [u8; 16] = [0; 16];
 const EMPTY_STACK: [u16; 16] = [0; 16];
@@ -25,7 +23,7 @@ impl Chip8Sys {
             register_i: 0,
             register_delay: 0,
             register_sound: 0,
-            program_counter: 0,
+            program_counter: 0x200, // initialize PC to start reading at 0x200
             stack_pointer: 0,
             stack: EMPTY_STACK,
             frame_buffer: [[false; 64]; 32],
@@ -35,24 +33,9 @@ impl Chip8Sys {
 
 impl Chip8Sys {
     pub fn display_buffer(&self) -> Vec<u32> {
-        // Convert the 64x32 pixel frame_buffer to the 640x320 computer display
-        /*
-        println!("frame_buffer");
-        for (i, pixel_col) in self.frame_buffer.iter().enumerate() {
-            print!("{:2}: ", i);
-            for pixel in pixel_col {
-                if *pixel {
-                    print!("1");
-                } else {
-                    print!("0");
-                }
-            }
-            println!();
-        }
-        println!();
-        */
+        // self.debug_print_frame_buffer();
 
-        // build all the rows
+        // Convert the 64x32 pixel frame_buffer to the 640x320 computer display
         let mut result = Vec::new();
         for row in self.frame_buffer.iter() {
             let mut row_display = Vec::new();
@@ -67,13 +50,30 @@ impl Chip8Sys {
         }
         result
     }
-    pub fn draw_nibble(&mut self, x: usize, y: usize, nibble: Nibble) {
+    fn debug_print_frame_buffer(&self) {
+        println!("frame_buffer");
+        for (i, pixel_col) in self.frame_buffer.iter().enumerate() {
+            print!("{:2}: ", i);
+            for pixel in pixel_col {
+                if *pixel {
+                    print!("1");
+                } else {
+                    print!("0");
+                }
+            }
+            println!();
+        }
+        println!();
+    }
+    fn draw_nibble(&mut self, x: usize, y: usize, nibble: Nibble) {
+        /*
         println!("frame_buffer x: {}", x);
         println!("frame_buffer y: {}", y);
         println!(
             "nibble 0-3: {}{}{}{}",
             nibble.0 as u8, nibble.1 as u8, nibble.2 as u8, nibble.3 as u8
         );
+        // */
         self.frame_buffer[y][x] = nibble.0;
         self.frame_buffer[y][x + 1] = nibble.1;
         self.frame_buffer[y][x + 2] = nibble.2;
@@ -91,7 +91,7 @@ impl Chip8Sys {
 pub struct Nibble(bool, bool, bool, bool);
 impl Nibble {
     fn from_u8(byte: u8) -> Nibble {
-        println!("nibble byte: {:08b}", byte);
+        // println!("nibble byte: {:08b}", byte);
         Nibble(
             byte & 0b1000_0000 == 128,
             byte & 0b0100_0000 == 64,
