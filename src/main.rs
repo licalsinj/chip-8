@@ -113,7 +113,10 @@ fn load_rom(game: &mut Chip8Sys) {
     // draw whole screen
     game.memory[0x206] = 0xDF;
     game.memory[0x207] = 0xFF;
-    // jump to start
-    game.memory[0x208] = 0x12;
-    game.memory[0x209] = 0x00;
+    // jump to random ending memory
+    game.memory[0x208] = 0x1F;
+    game.memory[0x209] = 0x11;
+    // jump back to start
+    game.memory[0xF11] = 0x12;
+    game.memory[0xF12] = 0x00;
 }
