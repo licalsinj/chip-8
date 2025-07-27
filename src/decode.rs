@@ -29,7 +29,7 @@ impl Chip8Sys {
             }
             0x1 => {
                 println!("Hit 0x1 - Jump");
-                self.program_counter = (b as u16) << 8 | (c << 4 | d) as u16;
+                self.program_counter = Chip8Sys::nnn(b, c, d); //(b as u16) << 8 | (c << 4 | d) as u16;
             }
             0x2 => {
                 // this is not the correct instruction to execute here.
@@ -39,11 +39,28 @@ impl Chip8Sys {
             0x3 => println!("Hit 0x3"),
             0x4 => println!("Hit 0x4"),
             0x5 => println!("Hit 0x5"),
-            0x6 => println!("Hit 0x6"),
-            0x7 => println!("Hit 0x7"),
+            0x6 => {
+                println!("Hit 0x6");
+                self.register[b as usize] = Chip8Sys::nn(c, d); // c << 4 | d;
+                println!("register[{:02X}] = {:02X}", b, self.register[b as usize]);
+            }
+            0x7 => {
+                println!("Hit 0x7");
+                self.register[b as usize] += Chip8Sys::nn(c, d);
+                println!(
+                    "register[{:X}] + {:02X} = {:02X}",
+                    b,
+                    Chip8Sys::nn(c, d),
+                    self.register[b as usize]
+                );
+            }
             0x8 => println!("Hit 0x8"),
             0x9 => println!("Hit 0x9"),
-            0xA => println!("Hit 0xA"),
+            0xA => {
+                println!("Hit 0xA");
+                self.register_i = Chip8Sys::nnn(b, c, d);
+                println!("reg I = {:02X}", self.register_i);
+            }
             0xB => println!("Hit 0xB"),
             0xC => println!("Hit 0xC"),
             0xD => {
@@ -57,5 +74,11 @@ impl Chip8Sys {
     }
     fn draw(&self, x: u8, y: u8, n: u8) {
         // println!("x: {x}, y: {y}, n: {n}");
+    }
+    fn nnn(b: u8, c: u8, d: u8) -> u16 {
+        (b as u16) << 8 | (c << 4 | d) as u16
+    }
+    fn nn(c: u8, d: u8) -> u8 {
+        c << 4 | d
     }
 }

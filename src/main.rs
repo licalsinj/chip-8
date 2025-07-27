@@ -115,8 +115,17 @@ fn load_rom(game: &mut Chip8Sys) {
     game.memory[0x207] = 0xFF;
     // jump to random ending memory
     game.memory[0x208] = 0x1F;
-    game.memory[0x209] = 0x11;
+    game.memory[0x209] = 0x12;
+    // set register 2 to 0xF8
+    game.memory[0xF12] = 0x62;
+    game.memory[0xF13] = 0xF8;
+    // Add 2 to Reg 2
+    game.memory[0xF14] = 0x72;
+    game.memory[0xF15] = 0x02;
+    // Set reg I to F1F
+    game.memory[0xF16] = 0xAF;
+    game.memory[0xF17] = 0x1F;
     // jump back to start
-    game.memory[0xF11] = 0x12;
-    game.memory[0xF12] = 0x00;
+    game.memory[0xF18] = 0x12;
+    game.memory[0xF19] = 0x00;
 }

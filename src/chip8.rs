@@ -6,7 +6,7 @@ const PIXEL_COLOR: u32 = 0x0000FF88;
 pub struct Chip8Sys {
     pub memory: [u8; 4096],
     pub register: [u8; 16],
-    pub register_i: u8,
+    pub register_i: u16,
     pub register_delay: u8,
     pub register_sound: u8,
     pub program_counter: u16,
