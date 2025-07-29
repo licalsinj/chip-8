@@ -65,6 +65,7 @@ impl Chip8Sys {
         }
         println!();
     }
+    /*
     fn draw_nibble(&mut self, x: usize, y: usize, nibble: Nibble) {
         /*
         println!("frame_buffer x: {}", x);
@@ -86,8 +87,10 @@ impl Chip8Sys {
         self.draw_nibble(x, y + 3, sprite.3);
         self.draw_nibble(x, y + 4, sprite.4);
     }
+    */
 }
 
+/*
 pub struct Nibble(bool, bool, bool, bool);
 impl Nibble {
     fn from_u8(byte: u8) -> Nibble {
@@ -117,3 +120,4 @@ impl Sprite {
         )
     }
 }
+*/
