@@ -12,7 +12,7 @@ pub struct Chip8Sys {
     pub program_counter: u16,
     pub stack_pointer: u8,
     pub stack: [u16; 16],
-    pub frame_buffer: [[bool; 64]; 32], // display is 64px by 32px minifb expects u32
+    pub frame_buffer: [u8; 256],
 }
 
 impl Chip8Sys {
@@ -26,7 +26,7 @@ impl Chip8Sys {
             program_counter: 0x200, // initialize PC to start reading at 0x200
             stack_pointer: 0,
             stack: EMPTY_STACK,
-            frame_buffer: [[false; 64]; 32],
+            frame_buffer: [0xAA; 256],
         }
     }
 }
@@ -36,7 +36,58 @@ impl Chip8Sys {
         // self.debug_print_frame_buffer();
 
         // Convert the 64x32 pixel frame_buffer to the 640x320 computer display
-        let mut result = Vec::new();
+        let mut results = Vec::new();
+        for pixel in self.frame_buffer {
+            // Convert frame_buffer to the display buffer which is 10x bigger and u32
+            // u32 is 4x as big as u8
+            let mut result: Vec<u32> = Vec::new();
+            if pixel & 128 == 128 {
+                result.append(&mut vec![PIXEL_COLOR; 20]);
+            } else {
+                result.append(&mut vec![0; 20]);
+            }
+            if pixel & 64 == 64 {
+                result.append(&mut vec![PIXEL_COLOR; 20]);
+            } else {
+                result.append(&mut vec![0; 20]);
+            }
+            if pixel & 32 == 32 {
+                result.append(&mut vec![PIXEL_COLOR; 20]);
+            } else {
+                result.append(&mut vec![0; 20]);
+            }
+
+            if pixel & 16 == 16 {
+                result.append(&mut vec![PIXEL_COLOR; 20]);
+            } else {
+                result.append(&mut vec![0; 20]);
+            }
+
+            if pixel & 8 == 8 {
+                result.append(&mut vec![PIXEL_COLOR; 20]);
+            } else {
+                result.append(&mut vec![0; 20]);
+            }
+
+            if pixel & 4 == 4 {
+                result.append(&mut vec![PIXEL_COLOR; 20]);
+            } else {
+                result.append(&mut vec![0; 20]);
+            }
+            if pixel & 2 == 2 {
+                result.append(&mut vec![PIXEL_COLOR; 20]);
+            } else {
+                result.append(&mut vec![0; 20]);
+            }
+            if pixel & 1 == 1 {
+                result.append(&mut vec![PIXEL_COLOR; 20]);
+            } else {
+                result.append(&mut vec![0; 20]);
+            }
+            results.append(&mut vec![result; 20].concat());
+        }
+
+        /*
         for row in self.frame_buffer.iter() {
             let mut row_display = Vec::new();
             for col in row {
@@ -48,19 +99,14 @@ impl Chip8Sys {
             }
             result.append(&mut vec![row_display; 20].concat());
         }
-        result
+        // */
+        results
     }
     fn debug_print_frame_buffer(&self) {
         println!("frame_buffer");
         for (i, pixel_col) in self.frame_buffer.iter().enumerate() {
             print!("{:2}: ", i);
-            for pixel in pixel_col {
-                if *pixel {
-                    print!("1");
-                } else {
-                    print!("0");
-                }
-            }
+            println!("{:b}", pixel_col);
             println!();
         }
         println!();

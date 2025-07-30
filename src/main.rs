@@ -9,6 +9,11 @@ const WIDTH: usize = 640 * 2;
 const HEIGHT: usize = 320 * 2;
 
 fn main() {
+    println!(" u8::MAX: {:04X}", u8::MAX);
+    println!("u16::MAX: {:04X}", u16::MAX);
+    println!(" u8::MAX: {}", u8::MAX);
+    println!("u16::MAX: {}", u16::MAX);
+    // fetch the program counter's instruction, parse it, and increment it
     // this is the built in Chip-8 font that Roms expect to access
     const FONT: [u8; 80] = [
         0xF0, 0x90, 0x90, 0x90, 0xF0, // 0 loc 0x050
@@ -110,38 +115,69 @@ fn load_dxyn_rom(game: &mut Chip8Sys) {
     game.memory[0x201] = 0xE0;
     // load register V0 with x position
     game.memory[0x202] = 0x60;
-    game.memory[0x203] = 0x05;
+    game.memory[0x203] = 0x00;
     // load register V1 with y position
     game.memory[0x204] = 0x61;
-    game.memory[0x205] = 0x0A;
+    game.memory[0x205] = 0x05;
     // load register I with sprite location
     game.memory[0x206] = 0xA0;
-    // 0 Sprite is at 0x050
-    //game.memory[0x207] = 0x50;
-    game.memory[0x207] = 0x9B; // F Sprite is at 0x09A
+    game.memory[0x207] = 0x9B; // F Sprite is at 0x09B
 
+    /*
     // draw sprite at I at position V0 and V1
     game.memory[0x208] = 0xD0;
     game.memory[0x209] = 0x15; // the default sprites are 5 px tall
+    // */
 
+    // update reg[1]'s location to move 10 Y
+    game.memory[0x20A] = 0x71;
+    game.memory[0x20B] = 0x0A;
+    // draw F again at new I location
+    game.memory[0x20C] = 0xD0;
+    game.memory[0x20D] = 0x15;
+    /*
     // try to draw 0 to 2 vertically at (0, 15)
-    // load V0 with x position (0)
-    game.memory[0x20A] = 0x60;
-    game.memory[0x20B] = 0x00;
-    // load V1 with y position 0x0F
-    game.memory[0x20C] = 0x61;
-    game.memory[0x20D] = 0x0F;
+    // load V2 with x position (0)
+    game.memory[0x20E] = 0x62;
+    game.memory[0x20F] = 0x00;
+    // load V3 with y position 0x0F
+    game.memory[0x210] = 0x63;
+    game.memory[0x211] = 0x00;
     // load register I with sprite location
-    game.memory[0x20E] = 0xA0;
-    game.memory[0x20F] = 0x50; // 0 Sprite is at 0x050
+    game.memory[0x212] = 0xA0;
+    game.memory[0x213] = 0x50; // 0 Sprite is at 0x050
 
-    // draw something F (15) lines tall
-    game.memory[0x210] = 0xD0;
-    game.memory[0x211] = 0x1F;
+    // draw something 0xF (15) lines tall
+    game.memory[0x214] = 0xD2;
+    game.memory[0x215] = 0x3F;
+    // */
+    // reset Y to be next to the first F
+    game.memory[0x216] = 0x61;
+    game.memory[0x217] = 0x05;
+
+    // Add 5 to Y
+    game.memory[0x218] = 0x71;
+    game.memory[0x219] = 0x05;
+
+    // load E sprite's location into Register I
+    game.memory[0x21A] = 0xA0;
+    game.memory[0x21B] = 0x00; // E sprite location: 0x96
+
+    // draw sprite at I at position V0 and V1
+    game.memory[0x21C] = 0xD0;
+    game.memory[0x21D] = 0x15; // the default sprites are 5 px tall
+
+    // update reg[1]'s location to move 5 in Y direction
+    game.memory[0x21E] = 0x71;
+    game.memory[0x21F] = 0x05;
+
+    // draw sprite at I at position V0 and V1
+    game.memory[0x220] = 0xD0;
+    game.memory[0x221] = 0x15; // the default sprites are 5 px tall
 
     // jump to beginning memory
-    game.memory[0x220] = 0x12;
-    game.memory[0x221] = 0x00;
+    // game.memory[0x230] = 0x12;
+    // game.memory[0x231] = 0x00;
 }
 fn load_flashing_rom(game: &mut Chip8Sys) {
     // This is based dxyn doing nothing

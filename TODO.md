@@ -10,6 +10,7 @@
 ## Emulation Tasks
 
 - [ ] Implement Draw (DXYN) instruction
+  - I've got basic drawing working but need to include the collision logic
 - [ ] Manually Read IBM Logo Rom
 - [ ] Create Rust Unit Tests
 - [ ] Implement Remaining Instructions
