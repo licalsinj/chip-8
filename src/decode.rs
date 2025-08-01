@@ -1,8 +1,7 @@
-use std::borrow::BorrowMut;
-
 use crate::{bitwise::Bitwise, chip8::Chip8Sys};
 
 impl Chip8Sys {
+    // This will run the next command in program_counter is pointing to in Chip8Sys.memory
     pub fn run(&mut self) {
         // println!();
         // println!("PC: {:x}", self.program_counter);
@@ -15,7 +14,7 @@ impl Chip8Sys {
         let c: u8 = (0xF0 & instruction) >> 0x4;
         let d: u8 = 0x0F & instruction;
         self.program_counter += 2;
-        // To debug what instruction values I'm sending in
+        // Prints debug what instruction values I'm sending in
         /*
         println!("a: {:x}", a);
         println!("b: {:x}", b);
@@ -79,23 +78,25 @@ impl Chip8Sys {
             _ => return,
         }
     }
+    // Helper function to handle the Draw command logic 0xDXYN
     // TODO: Expand this to handle printing at the edge correctly. Right now it wraps.
     fn draw(&mut self, x: u8, y: u8, n: u8) {
-        // to debug values being sent to DXYN
+        // Prints debug values being sent to DXYN
         // println!("x: {x} y:{y} n:{n}");
 
         // Get X & Y Cordinates from register[X] and register[Y]
-        // Additionally I need to get the bit at x_loc y_loc
+        // This requires me to convert u8 to bits
         // First figure out which u8 they're in
-        let mut x_loc = (self.register[x as usize] as f32 / 8.).floor() as u8;
+        let x_loc = (self.register[x as usize] as f32 / 8.).floor() as u8;
         let mut y_loc = ((self.register[y as usize] as u32 * 64) as f32 / 8.).floor() as u8;
         // Then figure out which bit of the u8 is being referenced
-        let mut x_bit = (self.register[x as usize] % 8) as usize;
-        let mut y_bit = self.register[y as usize] % 8;
+        let x_bit = (self.register[x as usize] % 8) as usize;
+        let y_bit = self.register[y as usize] % 8;
 
         // Get starting memory location of register_i
+        // This is where the rom will store the sprite it wants drawn
         let mut starting_loc = self.register_i as usize;
-        // to debug frame buffer values as bits
+        // Prints debug frame buffer values as bits
         /*
         for (i, px) in self.frame_buffer.iter().enumerate() {
             print!("{:08b}", px);
@@ -108,7 +109,7 @@ impl Chip8Sys {
         */
 
         // read memory n times to get the full sized sprite
-        for index in 0..n {
+        for _ in 0..n {
             let sprite_pxs = self.memory[starting_loc].bit_vec();
             print_vec(&sprite_pxs, "sprite_pxs");
             println!("x_loc: {x_loc} x_bit: {x_bit}");
@@ -157,9 +158,13 @@ impl Chip8Sys {
             starting_loc += 1;
         }
     }
+    // helper function to get the last 3 nibbles of a command
+    // commands coming in as 0x?NNN will use this
     fn nnn(b: u8, c: u8, d: u8) -> u16 {
         (b as u16) << 8 | (c << 4 | d) as u16
     }
+    // helper function to get the last 2 nibbles of a command
+    // commands coming in as 0x??NN will use this
     fn nn(c: u8, d: u8) -> u8 {
         c << 4 | d
     }

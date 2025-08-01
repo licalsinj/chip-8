@@ -1,12 +1,8 @@
 use crate::chip8::Chip8Sys;
 // extending Chip8Sys to load roms
 impl Chip8Sys {
+    // A simple rom that prints the F sprite on the screen at (0,0)
     /*
-    pub fn new() -> Self {
-        Roms {
-            memory: [0; 4096 - 0x0A0],
-        }
-    }*/
     pub fn load_dxyn_rom_simple(&mut self) -> &mut Self {
         // clear screen
         self.memory[0x200] = 0x00;
@@ -27,6 +23,10 @@ impl Chip8Sys {
         self.memory[0x209] = 0x15; // the default sprites are 5 px tall
         self
     }
+    // */
+    // A more advanced rom that prints F E F at (0,5)
+    // it then and then prints E over the 2nd F
+    // to test XOR functionality and VF flag
     pub fn load_dxyn_rom_adv(&mut self) -> &mut Self {
         // clear screen
         self.memory[0x200] = 0x00;
@@ -95,40 +95,5 @@ impl Chip8Sys {
         self.memory[0x230] = 0x12;
         self.memory[0x231] = 0x00;
         self
-    }
-    // TODO: Delete this
-    // I'm intentionally not refactoring this because I don't want to use it by accident. I'll
-    // delete it after it's checked in for posterity.
-    fn load_flashing_rom(self: &mut Chip8Sys) {
-        panic!("This is based on a non functional DXYN");
-        // This is based dxyn doing nothing
-        // This also uses a fake command 0x2000 which fills the screen
-        // clear screen
-        self.memory[0x200] = 0x00;
-        self.memory[0x201] = 0xE0;
-        // draw whole screen
-        self.memory[0x202] = 0xD1;
-        self.memory[0x203] = 0x11;
-        // fill screen
-        self.memory[0x204] = 0x20;
-        self.memory[0x205] = 0x00;
-        // draw whole screen
-        self.memory[0x206] = 0xDF;
-        self.memory[0x207] = 0xFF;
-        // jump to random ending memory
-        self.memory[0x208] = 0x1F;
-        self.memory[0x209] = 0x12;
-        // set register 2 to 0xF8
-        self.memory[0xF12] = 0x62;
-        self.memory[0xF13] = 0xF8;
-        // Add 2 to Reg 2
-        self.memory[0xF14] = 0x72;
-        self.memory[0xF15] = 0x02;
-        // Set reg I to F1F
-        self.memory[0xF16] = 0xAF;
-        self.memory[0xF17] = 0x1F;
-        // jump back to start
-        self.memory[0xF18] = 0x12;
-        self.memory[0xF19] = 0x00;
     }
 }

@@ -1,13 +1,17 @@
-// creating a trait to make bit manipulation of u8s easier
-
+// A trait to make bit manipulation of u8s easier
 pub trait Bitwise {
+    // should convert the bits in T to a Vec<bool>
     fn bit_vec(&self) -> Vec<bool>;
+    // should convert a Vec<bool> back to T
+    // Creation errors are available if the exact length isn't provided
     fn from_bit_vec(v: Vec<bool>) -> Result<Self, BitwiseCreationErr>
     where
         Self: Sized;
 }
 
+// Implementation of Bitwise trait for u8
 impl Bitwise for u8 {
+    // Will convert the bits in T to a Vec<bool>
     fn bit_vec(&self) -> Vec<bool> {
         let mut result = Vec::new();
         // TODO: Do this in a for loop
@@ -22,6 +26,8 @@ impl Bitwise for u8 {
         result.push((self & 0b0000_0001) == 0b0000_0001);
         result
     }
+    // Will convert a Vec<bool> back to T
+    // Creation errors are available if exactly 8 bools aren't provided
     fn from_bit_vec(v: Vec<bool>) -> Result<u8, BitwiseCreationErr> {
         if v.len() < 8 {
             return Err(BitwiseCreationErr::TooShort);
@@ -40,6 +46,7 @@ impl Bitwise for u8 {
 }
 
 #[derive(Debug)]
+// errors to be used if Vec<bool> can't cleanly go into T
 pub enum BitwiseCreationErr {
     TooShort, // The vector provided is too short, it should be 8 bits exactly
     TooLong,  // The vector provided is too long, it should be 8 bits exactly
