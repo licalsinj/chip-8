@@ -10,6 +10,8 @@ pub trait Bitwise {
 impl Bitwise for u8 {
     fn bit_vec(&self) -> Vec<bool> {
         let mut result = Vec::new();
+        // TODO: Do this in a for loop
+        // for _ in ..8
         result.push((self & 0b1000_0000) == 0b1000_0000);
         result.push((self & 0b0100_0000) == 0b0100_0000);
         result.push((self & 0b0010_0000) == 0b0010_0000);
@@ -39,8 +41,8 @@ impl Bitwise for u8 {
 
 #[derive(Debug)]
 pub enum BitwiseCreationErr {
-    TooShort, // The vector provided is too short to create datatype
-    TooLong,  // The vector provided is too long to create the datatype
+    TooShort, // The vector provided is too short, it should be 8 bits exactly
+    TooLong,  // The vector provided is too long, it should be 8 bits exactly
 }
 
 // TODO: Write some tests for this

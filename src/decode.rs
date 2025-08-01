@@ -15,6 +15,7 @@ impl Chip8Sys {
         let c: u8 = (0xF0 & instruction) >> 0x4;
         let d: u8 = 0x0F & instruction;
         self.program_counter += 2;
+        // To debug what instruction values I'm sending in
         /*
         println!("a: {:x}", a);
         println!("b: {:x}", b);
@@ -22,6 +23,7 @@ impl Chip8Sys {
         println!("d: {:x}", d);
         println!("PC inc: {:x}", self.program_counter);
         // */
+
         // Implement the Instructions for the Chip-8
         match a {
             0x0 => {
@@ -34,7 +36,7 @@ impl Chip8Sys {
             }
             0x1 => {
                 println!("Hit 0x1 - Jump");
-                self.program_counter = Chip8Sys::nnn(b, c, d); //(b as u16) << 8 | (c << 4 | d) as u16;
+                self.program_counter = Chip8Sys::nnn(b, c, d);
             }
             0x2 => {
                 // this is not the correct instruction to execute here.
@@ -46,7 +48,7 @@ impl Chip8Sys {
             0x5 => println!("Hit 0x5"),
             0x6 => {
                 println!("Hit 0x6 - Load VX with NN");
-                self.register[b as usize] = Chip8Sys::nn(c, d); // c << 4 | d;
+                self.register[b as usize] = Chip8Sys::nn(c, d);
                 println!("register[{:02X}] = {:02X}", b, self.register[b as usize]);
             }
             0x7 => {
@@ -77,10 +79,13 @@ impl Chip8Sys {
             _ => return,
         }
     }
+    // TODO: Expand this to handle printing at the edge correctly. Right now it wraps.
     fn draw(&mut self, x: u8, y: u8, n: u8) {
+        // to debug values being sent to DXYN
         // println!("x: {x} y:{y} n:{n}");
+
         // Get X & Y Cordinates from register[X] and register[Y]
-        // Need to get the bit at x_loc y_loc
+        // Additionally I need to get the bit at x_loc y_loc
         // First figure out which u8 they're in
         let mut x_loc = (self.register[x as usize] as f32 / 8.).floor() as u8;
         let mut y_loc = ((self.register[y as usize] as u32 * 64) as f32 / 8.).floor() as u8;
@@ -90,6 +95,7 @@ impl Chip8Sys {
 
         // Get starting memory location of register_i
         let mut starting_loc = self.register_i as usize;
+        // to debug frame buffer values as bits
         /*
         for (i, px) in self.frame_buffer.iter().enumerate() {
             print!("{:08b}", px);
@@ -119,7 +125,6 @@ impl Chip8Sys {
             // It's going to be filled with what's already on the screen from 0 to the starting x
             // positon
             let mut result_vec = fb_start[..x_bit as usize].to_vec();
-            // print_vec(&result_vec, "result_vec:");
             // then I'll add the sprite data to the vec
             for (loc, b) in fb_start[x_bit as usize..x_bit as usize + 8]
                 .iter()
@@ -137,13 +142,7 @@ impl Chip8Sys {
             // finally I'll add the leftover bits that were already on the screen and I don't want
             // affected by the sprite drawing
             result_vec.append(&mut fb_start[x_bit as usize + 8..].to_vec());
-            // print_vec(&result_vec, "result_vec");
 
-            /*println!(
-                "result_vec_start built: {:08b}_{:08b}",
-                u8::from_bit_vec(result_vec[..8].to_vec()).unwrap(),
-                u8::from_bit_vec(result_vec[8..].to_vec()).unwrap()
-            );*/
             // TODO: Fix the expect here
             self.frame_buffer[(x_loc + y_loc) as usize] =
                 u8::from_bit_vec(result_vec[..8].to_vec())
@@ -151,58 +150,11 @@ impl Chip8Sys {
             self.frame_buffer[(x_loc + y_loc + 1) as usize] =
                 u8::from_bit_vec(result_vec[8..].to_vec())
                     .expect("provided vector should be correct number of bits long.");
-            /* println!(
-                "fb built: {:08b}_{:08b}",
-                self.frame_buffer[(x_loc + y_loc) as usize],
-                self.frame_buffer[(x_loc + y_loc + 1) as usize]
-            );*/
-            // increment x for the next loop and move to the next pixel location in memory
+
+            // increment y by 8 bytes (64 bits) to get to the next row
             y_loc += 8;
+            // also increment the memory location we're reading to find the next row of the sprite
             starting_loc += 1;
-
-            /*
-            // TODO: My DXYN has the x and y locations swapped
-            // TODO: Figure out why you're indexing things this way
-            // TODO: Convert frame_buffer to be u8 not bools
-            // this is a temp process to convert the frame_buffer bool to a u8
-            println!(
-                "self.fb[{}][{}] as u8: {:08b}",
-                x_loc,
-                y_loc,
-                (self.frame_buffer[x_loc][y_loc] as u8) << 7
-            );
-            let original_fb = ((self.frame_buffer[x_loc][y_loc] as u8) << 7)
-                + ((self.frame_buffer[x_loc][y_loc + 1] as u8) << 6)
-                + ((self.frame_buffer[x_loc][y_loc + 2] as u8) << 5)
-                + ((self.frame_buffer[x_loc][y_loc + 3] as u8) << 4)
-                + ((self.frame_buffer[x_loc + 1][y_loc] as u8) << 3)
-                + ((self.frame_buffer[x_loc + 1][y_loc + 1] as u8) << 2)
-                + ((self.frame_buffer[x_loc + 1][y_loc + 2] as u8) << 2)
-                + (self.frame_buffer[x_loc + 1][y_loc + 3] as u8);
-
-            println!("origin_fb: {:08b}", original_fb);
-            println!("sprite_px: {:08b}", sprite_px);
-
-            // XOR temp_fb (temp frame buffer) with the sprite data
-            let result_fb = original_fb ^ sprite_px;
-            println!("result_fb: {:08b}", result_fb);
-
-            // deconstruct temp_fb back into self.frame_buffer[x][y]
-            self.frame_buffer[x_loc][y_loc] = (result_fb & 0b1000_0000) == 0b1000_0000;
-            self.frame_buffer[x_loc][y_loc + 1] = (result_fb & 0b0100_0000) == 0b0100_0000;
-            self.frame_buffer[x_loc][y_loc + 2] = (result_fb & 0b0010_0000) == 0b0010_0000;
-            self.frame_buffer[x_loc][y_loc + 3] = (result_fb & 0b0001_0000) == 0b0001_0000;
-            self.frame_buffer[x_loc + 1][y_loc] = (result_fb & 0b0000_1000) == 0b0000_1000;
-            self.frame_buffer[x_loc + 1][y_loc + 1] = (result_fb & 0b0000_0100) == 0b0000_0100;
-            self.frame_buffer[x_loc + 1][y_loc + 2] = (result_fb & 0b0000_0010) == 0b0000_0010;
-            self.frame_buffer[x_loc + 1][y_loc + 3] = (result_fb & 0b0000_0001) == 0b0000_0001;
-
-            // If pixels were turned "off" set the register[F] to 1 otherwise set to 0
-            if (!(original_fb & result_fb) & original_fb) != 0 {
-                self.register[0xF] = 1;
-                println!("Register F is: {}", self.register[0xF]);
-            }
-            // */
         }
     }
     fn nnn(b: u8, c: u8, d: u8) -> u16 {
@@ -213,7 +165,8 @@ impl Chip8Sys {
     }
 }
 
-// helper function to print a vector
+// TODO: Remove this it's a temporary
+// helper function to print a bool vector
 fn print_vec(v: &Vec<bool>, vec_name: &str) {
     print!("{vec_name}: ");
     for b in v.iter() {
