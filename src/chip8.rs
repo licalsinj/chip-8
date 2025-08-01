@@ -1,4 +1,6 @@
-pub const EMPTY_MEMORY: [u8; 4096] = [0; 4096];
+use crate::{HEIGHT, WIDTH};
+
+const EMPTY_MEMORY: [u8; 4096] = [0; 4096];
 const EMPTY_REGISTER: [u8; 16] = [0; 16];
 // const EMPTY_STACK: [u16; 16] = [0; 16];
 const PIXEL_COLOR: u32 = 0x0000FF88;
@@ -37,6 +39,10 @@ impl Chip8Sys {
     // TODO: Make this actually use the WIDTH and HEIGHT constants I define in main.rs
     pub fn display_buffer(&self) -> Vec<u32> {
         // NOTE: u32 is 4x as big as u8
+        // Multiply frame_buffer length by 8 for u32 into u8 conversion
+        // then by 20 for the WIDTH * HEIGHT scaling (which is still a magic number...)
+        let scaler = (WIDTH * HEIGHT) / (self.frame_buffer.len() * 8 * 20);
+        println!("scaler: {scaler}");
 
         // Prints debug of the frame buffer to the console
         // self.debug_print_frame_buffer();
@@ -47,14 +53,17 @@ impl Chip8Sys {
             let mut power_2 = 0b1000_0000;
             for _ in 0..8 {
                 if pixel & power_2 == power_2 {
-                    result.append(&mut vec![PIXEL_COLOR; 20]);
+                    result.append(&mut vec![PIXEL_COLOR; scaler]);
                 } else {
-                    result.append(&mut vec![0; 20]);
+                    result.append(&mut vec![0; scaler]);
                 }
+                // reduce power_2 to check the next bit to the right
                 power_2 /= 2;
             }
+            // every 8 bytes (64 bits) add scaler number of rows to results
+            // this adds vertical thickness to the screen
             if (i + 1) % 8 == 0 {
-                results.append(&mut vec![result; 20].concat());
+                results.append(&mut vec![result; scaler].concat());
                 result = Vec::new();
             }
         }

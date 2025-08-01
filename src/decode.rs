@@ -170,7 +170,7 @@ impl Chip8Sys {
     }
 }
 
-// TODO: Remove this it's a temporary
+// TODO: Remove this. It's a temporary
 // helper function to print a bool vector
 fn print_vec(v: &Vec<bool>, vec_name: &str) {
     print!("{vec_name}: ");

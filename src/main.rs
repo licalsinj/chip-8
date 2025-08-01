@@ -8,8 +8,8 @@ mod chip8;
 mod decode;
 mod roms;
 
-const WIDTH: usize = 640 * 2;
-const HEIGHT: usize = 320 * 2;
+pub const WIDTH: usize = 640 * 2;
+pub const HEIGHT: usize = 320 * 2;
 
 fn main() {
     let temp_vec_bool = vec![true, false, true, false, false, true, false, true];
