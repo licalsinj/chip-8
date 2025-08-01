@@ -26,7 +26,7 @@ impl Chip8Sys {
             program_counter: 0x200, // initialize PC to start reading at 0x200
             stack_pointer: 0,
             stack: EMPTY_STACK,
-            frame_buffer: [0xAA; 256],
+            frame_buffer: [0x00; 256],
         }
     }
 }
@@ -37,10 +37,10 @@ impl Chip8Sys {
 
         // Convert the 64x32 pixel frame_buffer to the 640x320 computer display
         let mut results = Vec::new();
-        for pixel in self.frame_buffer {
+        let mut result: Vec<u32> = Vec::new();
+        for (i, pixel) in self.frame_buffer.iter().enumerate() {
             // Convert frame_buffer to the display buffer which is 10x bigger and u32
             // u32 is 4x as big as u8
-            let mut result: Vec<u32> = Vec::new();
             if pixel & 128 == 128 {
                 result.append(&mut vec![PIXEL_COLOR; 20]);
             } else {
@@ -84,7 +84,10 @@ impl Chip8Sys {
             } else {
                 result.append(&mut vec![0; 20]);
             }
-            results.append(&mut vec![result; 20].concat());
+            if (i + 1) % 8 == 0 {
+                results.append(&mut vec![result; 20].concat());
+                result = Vec::new();
+            }
         }
 
         /*
@@ -106,10 +109,8 @@ impl Chip8Sys {
         println!("frame_buffer");
         for (i, pixel_col) in self.frame_buffer.iter().enumerate() {
             print!("{:2}: ", i);
-            println!("{:b}", pixel_col);
-            println!();
+            println!("{:08b}", pixel_col);
         }
-        println!();
     }
     /*
     fn draw_nibble(&mut self, x: usize, y: usize, nibble: Nibble) {
