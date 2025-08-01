@@ -38,54 +38,20 @@ impl Chip8Sys {
     pub fn display_buffer(&self) -> Vec<u32> {
         // NOTE: u32 is 4x as big as u8
 
+        // Prints debug of the frame buffer to the console
         // self.debug_print_frame_buffer();
 
         let mut results = Vec::new();
         let mut result: Vec<u32> = Vec::new();
         for (i, pixel) in self.frame_buffer.iter().enumerate() {
-            // TODO: There has got to be a way to do this in a loop!
-            if pixel & 128 == 128 {
-                result.append(&mut vec![PIXEL_COLOR; 20]);
-            } else {
-                result.append(&mut vec![0; 20]);
-            }
-            if pixel & 64 == 64 {
-                result.append(&mut vec![PIXEL_COLOR; 20]);
-            } else {
-                result.append(&mut vec![0; 20]);
-            }
-            if pixel & 32 == 32 {
-                result.append(&mut vec![PIXEL_COLOR; 20]);
-            } else {
-                result.append(&mut vec![0; 20]);
-            }
-
-            if pixel & 16 == 16 {
-                result.append(&mut vec![PIXEL_COLOR; 20]);
-            } else {
-                result.append(&mut vec![0; 20]);
-            }
-
-            if pixel & 8 == 8 {
-                result.append(&mut vec![PIXEL_COLOR; 20]);
-            } else {
-                result.append(&mut vec![0; 20]);
-            }
-
-            if pixel & 4 == 4 {
-                result.append(&mut vec![PIXEL_COLOR; 20]);
-            } else {
-                result.append(&mut vec![0; 20]);
-            }
-            if pixel & 2 == 2 {
-                result.append(&mut vec![PIXEL_COLOR; 20]);
-            } else {
-                result.append(&mut vec![0; 20]);
-            }
-            if pixel & 1 == 1 {
-                result.append(&mut vec![PIXEL_COLOR; 20]);
-            } else {
-                result.append(&mut vec![0; 20]);
+            let mut power_2 = 0b1000_0000;
+            for _ in 0..8 {
+                if pixel & power_2 == power_2 {
+                    result.append(&mut vec![PIXEL_COLOR; 20]);
+                } else {
+                    result.append(&mut vec![0; 20]);
+                }
+                power_2 /= 2;
             }
             if (i + 1) % 8 == 0 {
                 results.append(&mut vec![result; 20].concat());
