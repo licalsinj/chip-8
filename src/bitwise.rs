@@ -14,16 +14,11 @@ impl Bitwise for u8 {
     // Will convert the bits in T to a Vec<bool>
     fn bit_vec(&self) -> Vec<bool> {
         let mut result = Vec::new();
-        // TODO: Do this in a for loop
-        // for _ in ..8
-        result.push((self & 0b1000_0000) == 0b1000_0000);
-        result.push((self & 0b0100_0000) == 0b0100_0000);
-        result.push((self & 0b0010_0000) == 0b0010_0000);
-        result.push((self & 0b0001_0000) == 0b0001_0000);
-        result.push((self & 0b0000_1000) == 0b0000_1000);
-        result.push((self & 0b0000_0100) == 0b0000_0100);
-        result.push((self & 0b0000_0010) == 0b0000_0010);
-        result.push((self & 0b0000_0001) == 0b0000_0001);
+        let mut power_2 = 0b1000_0000;
+        for _ in 0..8 {
+            result.push((self & power_2) == power_2);
+            power_2 /= 2;
+        }
         result
     }
     // Will convert a Vec<bool> back to T
