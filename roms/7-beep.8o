@@ -55,8 +55,6 @@
     again
   again
 
-:segment data
-
 : pattern
   19
   10 5 10 5 10 20

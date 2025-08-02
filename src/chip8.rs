@@ -1,4 +1,4 @@
-use crate::{HEIGHT, WIDTH};
+// use crate::{HEIGHT, WIDTH};
 
 const EMPTY_MEMORY: [u8; 4096] = [0; 4096];
 const EMPTY_REGISTER: [u8; 16] = [0; 16];
@@ -67,8 +67,8 @@ impl Chip8Sys {
         // NOTE: u32 is 4x as big as u8
         // Multiply frame_buffer length by 8 for u32 into u8 conversion
         // then by 20 for the WIDTH * HEIGHT scaling (which is still a magic number...)
-        let scaler = (WIDTH * HEIGHT) / (self.frame_buffer.len() * 8 * 20);
-        println!("scaler: {scaler}");
+        // let scaler = (WIDTH * HEIGHT) / (self.frame_buffer.len() * 8 * 20);
+        // println!("scaler: {scaler}");
         let scaler = 20;
 
         // Prints debug of the frame buffer to the console
@@ -96,12 +96,11 @@ impl Chip8Sys {
         }
         results
     }
-    // /*
+    /*
     // This will print the frame_buffer to the console
     fn debug_print_frame_buffer(&self) {
         println!("frame_buffer");
         // Prints debug frame buffer values as bits
-        // /*
         for (i, px) in self.frame_buffer.iter().enumerate() {
             print!("{:08b}", px);
             if (i + 1) % 8 == 0 {

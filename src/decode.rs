@@ -15,7 +15,7 @@ impl Chip8Sys {
         let d: u8 = 0x0F & instruction;
         self.program_counter += 2;
         // Prints debug what instruction values I'm sending in
-        // /*
+        /*
         println!("a: {:x}", a);
         println!("b: {:x}", b);
         println!("c: {:x}", c);
@@ -90,7 +90,7 @@ impl Chip8Sys {
         let mut y_loc = ((self.register[y as usize] as u32 * 64) as f32 / 8.).floor() as u8;
         // Then figure out which bit of the u8 is being referenced
         let x_bit = (self.register[x as usize] % 8) as usize;
-        let y_bit = self.register[y as usize] % 8;
+        // let y_bit = self.register[y as usize] % 8;
 
         // Get starting memory location of register_i
         // This is where the rom will store the sprite it wants drawn
@@ -110,9 +110,12 @@ impl Chip8Sys {
         // read memory n times to get the full sized sprite
         for _ in 0..n {
             let sprite_pxs = self.memory[starting_loc].bit_vec();
+            // Prints debug sprite pixel info and x,y location including bits
+            /*
             print_vec(&sprite_pxs, "sprite_pxs");
             println!("x_loc: {x_loc} x_bit: {x_bit}");
             println!("y_loc: {y_loc} y_bit: {y_bit}");
+            // */
 
             // Need to get the u8 at x_loc y_loc
             let mut fb_start = self.frame_buffer[(x_loc + y_loc) as usize].bit_vec();
@@ -171,6 +174,7 @@ impl Chip8Sys {
 
 // TODO: Remove this. It's a temporary
 // helper function to print a bool vector
+/*
 fn print_vec(v: &Vec<bool>, vec_name: &str) {
     print!("{vec_name}: ");
     for b in v.iter() {
@@ -178,6 +182,7 @@ fn print_vec(v: &Vec<bool>, vec_name: &str) {
     }
     println!("");
 }
+// */
 
 #[cfg(test)]
 mod test {

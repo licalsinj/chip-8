@@ -388,8 +388,6 @@
 
   loop again
 
-:segment data
-
 : scratchpad
   0xAA
 : scratchpad-plus-1
@@ -500,4 +498,8 @@
   0b10100000
 
 : version
-  :include "../../pictures/version.png"
+: version-0-0
+  0x0a 0xae 0xa2 0x42
+: version-1-0
+  0x38 0x08 0x30 0xb8
+

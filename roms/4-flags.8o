@@ -3,8 +3,61 @@
 # This is a visual adaptation of the math tests I wrote for Silicon8
 # (https://github.com/Timendus/silicon8/tree/main/tests)
 
-:include "../utils/helpers.8o"
-:include "../utils/text-rendering.8o"
+:stringmode str "$0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ -." {
+  :byte { 4 * VALUE }
+}
+
+:macro text X Y STR {
+  vD := X
+  vE := Y
+  i := STR
+  drawText
+}
+
+:alias x vA
+:alias y vB
+
+: waitKeyRelease
+  v0 := 0
+: -
+  if v0 key then jump -
+  v0 += 1
+  if v0 == 16 then return
+  jump -
+
+# Font rendering code and character data
+# Kept this very simplistic and fast
+
+:macro drawCharacter REG {
+  if REG == 0 then return
+  v0 := REG
+  drawChar
+}
+
+: drawText
+  load vC
+  drawChar
+  drawCharacter v1
+  drawCharacter v2
+  drawCharacter v3
+  drawCharacter v4
+  drawCharacter v5
+  drawCharacter v6
+  drawCharacter v7
+  drawCharacter v8
+  drawCharacter v9
+  drawCharacter vA
+  drawCharacter vB
+  drawCharacter vC
+  return
+
+: drawChar
+  i := characters
+  i += v0
+  sprite vD vE 4
+  vD += 4
+  return
+
 
 :alias 15_in_a_register v1
 :alias 100_in_a_register v1
@@ -312,7 +365,186 @@
 
   loop again
 
-:segment data
+: scratchpad
+  0
+: scratchpad-plus-1
+  0
+: scratchpad-plus-2
+  0
+: scratchpad-plus-3
+  0 0 0 0 0
+  0 0 0 0
+  0 0 0 0
+: scratchpad-plus-16
+  0
+
+
+# Positive and negative images
+: flag-ok
+  0b10100000
+  0b11000000
+: characters
+  0b10000000
+: flag-err
+  0b10100000
+  0b01000000
+  0b10100000
+
+# Individual characters, some taken from Corax89' test.
+: im0
+  0xE0 0xA0 0xA0 0xE0
+: im1
+  0xC0 0x40 0x40 0xE0
+: im2
+  0xE0 0x20 0xC0 0xE0
+: im3
+  0xE0 0x60 0x20 0xE0
+: im4
+  0xA0 0xE0 0x20 0x20
+: im5
+  0b11100000
+  0b11000000
+  0b00100000
+  0b11000000
+: im6
+  0xE0 0x80 0xE0 0xE0
+: im7
+  0xE0 0x20 0x20 0x20
+: im8
+  0xE0 0xE0 0xA0 0xE0
+: im9
+  0xE0 0xE0 0x20 0xE0
+: imA
+  0x40 0xA0 0xE0 0xA0
+: imB
+  0b11000000
+  0b11100000
+  0b10100000
+  0b11100000
+: imC
+  0b11100000
+  0b10000000
+  0b10000000
+  0b11100000
+: imD
+  0b11000000
+  0b10100000
+  0b10100000
+  0b11000000
+: imE
+  0xE0 0xC0 0x80 0xE0
+: imF
+  0xE0 0x80 0xC0 0x80
+: imG
+  0b01100000
+  0b10000000
+  0b10100000
+  0b01100000
+: imH
+  0b10100000
+  0b11100000
+  0b10100000
+  0b10100000
+: imI
+  0b11100000
+  0b01000000
+  0b01000000
+  0b11100000
+: imJ
+  0b01100000
+  0b00100000
+  0b00100000
+  0b11000000
+: imK
+  0b10100000
+  0b11000000
+  0b10100000
+  0b10100000
+: imL
+  0b10000000
+  0b10000000
+  0b10000000
+  0b11100000
+: imM
+  0b11100000
+  0b11100000
+  0b10100000
+  0b10100000
+: imN
+  0b11000000
+  0b10100000
+  0b10100000
+  0b10100000
+: imO
+  0b11100000
+  0b10100000
+  0b10100000
+  0b11100000
+: imP
+  0b11000000
+  0b10100000
+  0b11000000
+  0b10000000
+: imQ
+  0b01000000
+  0b10100000
+  0b11100000
+  0b01100000
+: imR
+  0b11000000
+  0b10100000
+  0b11000000
+  0b10100000
+: imS
+  0b01100000
+  0b11000000
+  0b00100000
+  0b11000000
+: imT
+  0b11100000
+  0b01000000
+  0b01000000
+  0b01000000
+: imU
+  0b10100000
+  0b10100000
+  0b10100000
+  0b01100000
+: imV
+  0b10100000
+  0b10100000
+  0b10100000
+  0b01000000
+: imW
+  0b10100000
+  0b10100000
+  0b11100000
+  0b11100000
+: imX
+  0xA0 0x40 0xA0 0xA0
+: imY
+  0b10100000
+  0b10100000
+  0b01000000
+  0b01000000
+: imZ
+  0b11100000
+  0b01100000
+  0b10000000
+  0b11100000
+: imSpace
+  0 0 0 0
+: imDash
+  0b00000000
+  0b11100000
+  0b00000000
+  0b00000000
+: imPeriod
+  0b00000000
+  0b00000000
+  0b00000000
+  0b01000000
+
 
 : flags-no-carry
   str "HAPPY" 0
@@ -321,4 +553,8 @@
 : flags-other
   str "OTHER" 0
 
-:include "../../pictures/version.png"
+: version-0-0
+  0x0a 0xae 0xa2 0x42
+: version-1-0
+  0x38 0x08 0x30 0xb8
+
