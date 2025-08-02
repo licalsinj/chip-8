@@ -40,15 +40,45 @@ impl Bitwise for u8 {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 // errors to be used if Vec<bool> can't cleanly go into T
 pub enum BitwiseCreationErr {
     TooShort, // The vector provided is too short, it should be 8 bits exactly
     TooLong,  // The vector provided is too long, it should be 8 bits exactly
 }
 
-// TODO: Write some tests for this
-// Such as:
-// - [ ] Creation short & long are hit correctly
-// - [ ] Creation works correctly
-// - [ ] bit_vec works correctly
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    // test that the bitwise implementation of u8 .bit_vec
+    // works correctly when given ideal parameters
+    fn correctly_generate_vec_from_u8() {
+        let bit_vec = vec![true, false, true, false, false, true, false, true];
+        let binary: u8 = 0b1010_0101;
+        assert_eq!(bit_vec, binary.bit_vec());
+    }
+
+    #[test]
+    // tests you can generate a number from a Vec<bool> when given ideal parameters
+    fn correctly_generate_u8_from_vec() {
+        let bit_vec = vec![true, false, true, false, false, true, false, true];
+        assert_eq!(Ok(0b1010_0101), u8::from_bit_vec(bit_vec));
+    }
+
+    #[test]
+    // tests that you get a BitwiseCreationErr::TooLong if you submit a Vec<bool> that's over 8
+    // bools long
+    fn vec_too_long_for_u8_creation() {
+        let bit_vec = vec![true, false, true, false, false, true, false, true, false];
+        assert_eq!(Err(BitwiseCreationErr::TooLong), u8::from_bit_vec(bit_vec));
+    }
+    #[test]
+    // tests that you get a BitwiseCreationErr::TooShort if you submit a Vec<bool> that's under 8
+    // bools long
+    fn vec_too_short_for_u8_creation() {
+        let bit_vec = vec![true, false, true, false, true, false, true];
+        assert_eq!(Err(BitwiseCreationErr::TooShort), u8::from_bit_vec(bit_vec));
+    }
+}

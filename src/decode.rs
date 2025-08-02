@@ -15,14 +15,13 @@ impl Chip8Sys {
         let d: u8 = 0x0F & instruction;
         self.program_counter += 2;
         // Prints debug what instruction values I'm sending in
-        /*
+        // /*
         println!("a: {:x}", a);
         println!("b: {:x}", b);
         println!("c: {:x}", c);
         println!("d: {:x}", d);
         println!("PC inc: {:x}", self.program_counter);
         // */
-
         // Implement the Instructions for the Chip-8
         match a {
             0x0 => {
@@ -178,4 +177,117 @@ fn print_vec(v: &Vec<bool>, vec_name: &str) {
         print!("{}", (b == &true) as u8);
     }
     println!("");
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    // Test that the nibbles going to nn() build a byte of NN
+    fn test_nn() {
+        assert_eq!(0x45, Chip8Sys::nn(0x4, 0x5));
+    }
+    #[test]
+    // Test that the nibbles going to nnn() build a byte of NNN
+    fn test_nnn() {
+        assert_eq!(0x456, Chip8Sys::nnn(0x4, 0x5, 0x6));
+    }
+
+    // NOTE: Section where I test all the Chip-8 instructions
+
+    #[test]
+    // Tests clear screen; 0x00E0
+    fn test_clear_screen() {
+        let mut chip8 = single_instruction_chip_8(0x00E0);
+        chip8.frame_buffer = [0xAA; 256];
+        chip8.run();
+        assert_eq!([0x00; 256], chip8.frame_buffer);
+    }
+
+    #[test]
+    // Tests Jump to memory location NNN; 0x1NNN
+    fn test_jump() {
+        let mut chip8 = single_instruction_chip_8(0x1556);
+        chip8.run();
+        assert_eq!(chip8.program_counter, 0x556);
+    }
+
+    #[test]
+    // Tests Load Register X with NN; 0x6XNN
+    fn test_load_register() {
+        // set register 0xA to be 0x88
+        let mut chip8 = single_instruction_chip_8(0x6A88);
+        chip8.run();
+        assert_eq!(0x88, chip8.register[0xA]);
+    }
+
+    #[test]
+    // Tests Add Value NN to Register X; 0x7XNN
+    fn test_add_register() {
+        // add 0x0A to Register A
+        let mut chip8 = single_instruction_chip_8(0x7A0B);
+        // directly access the register for testing purposes
+        println!("sum: {:02X}", 0x04 + 0x0B);
+        chip8.register[0xA] = 0x04;
+        chip8.run();
+        // 0x0B + 0x04 = 0x10
+        assert_eq!(0x0F, chip8.register[0xA]);
+    }
+
+    #[test]
+    // Tests Setting Index Register I to NNN; 0xANNN
+    fn test_set_register_i() {
+        // Set register I to 0x9A9
+        let mut chip8 = single_instruction_chip_8(0xA9A9);
+        chip8.run();
+        assert_eq!(chip8.register_i, 0x9A9);
+    }
+    #[test]
+    // Tests Draw sprite in reg_i that's N pixels tall
+    // in the frame_buffer at location stored in register X, and register Y;
+    // 0xDXYN
+    fn test_draw() {
+        let mut chip8 = single_instruction_chip_8(0xD125);
+        // load register 1 with X location
+        chip8.register[0x1] = 0xF;
+        // load register 2 with Y location
+        chip8.register[0x2] = 0x8;
+        // set register I to reference the sprite for 0 in memory 0x050
+        chip8.register_i = 0x050;
+        chip8.run();
+        // make the expected frame empty
+        let mut expected_frame_buffer = [0; 256];
+        // manually load the 0 sprite into the right spots
+        expected_frame_buffer[65] = 0b0000_0001;
+        expected_frame_buffer[66] = 0b1110_0000;
+        expected_frame_buffer[72] = 0b0000_0001;
+        expected_frame_buffer[73] = 0b0010_0000;
+        expected_frame_buffer[80] = 0b0000_0001;
+        expected_frame_buffer[81] = 0b0010_0000;
+        expected_frame_buffer[88] = 0b0000_0001;
+        expected_frame_buffer[89] = 0b0010_0000;
+        expected_frame_buffer[96] = 0b0000_0001;
+        expected_frame_buffer[97] = 0b1110_0000;
+
+        assert_eq!(chip8.frame_buffer, expected_frame_buffer);
+    }
+    // NOTE: This is the format I find myself using for these tests
+    // with other code sprinkled in
+    #[test]
+    // Tests TEMPLATE
+    fn test_chip8_command() {
+        let mut chip8 = single_instruction_chip_8(0x0000);
+        chip8.run();
+        assert_eq!(1, 1);
+    }
+
+    // NOTE: Helper functions for testing
+    // Helper function to build a Chip8Sys easily with 1 instruction at 200
+    fn single_instruction_chip_8(instruction: u16) -> Chip8Sys {
+        let mut chip8 = Chip8Sys::new();
+        chip8.memory[0x200] = ((instruction & 0xFF00) >> 8) as u8;
+        chip8.memory[0x201] = (instruction & 0xFF) as u8;
+        chip8
+    }
 }
