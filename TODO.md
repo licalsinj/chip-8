@@ -7,7 +7,6 @@
 
 ## Emulation Tasks
 
-- [ ] Manually Read IBM Logo Rom
 - [ ] Implement Remaining Instructions
 - [ ] Dynamically Upload Rom
 - [ ] Connect Keyboard Controls
@@ -16,14 +15,15 @@
 
 ## Completed
 
-### Refactoring
+### Completed Refactoring Tasks
 
 - [x] Remove Nibble and Sprite structs
 - [x] Change Chip8Sys.frame_buffer to be a stream of u8
   - instead of the 2D array of bools it is now
 - [x] Get drawing to work with the new u8 frame_buffer
 
-### Emulation Tasks
+### Completed Emulation Tasks
 
 - [x] Implement Draw (DXYN) instruction
 - [x] Create Rust Unit Tests
+- [x] Manually Read IBM Logo Rom
