@@ -16,22 +16,27 @@ fn main() {
     // load the ROM from Disc
     // let file_path = "roms/1-chip8-logo.ch8";
     // let file_path = "roms/2-ibm-logo.ch8";
-    let file_path = "roms/4-flags.ch8";
+    // let file_path = "roms/3-corax+.ch8";
+    // let file_path = "roms/4-flags.ch8";
+    let file_path = "roms/test_opcode.ch8";
     let mut file = File::open(file_path).expect("should have been able to open the file");
     let mut rom = [0; 256];
     file.read(&mut rom[..])
         .expect("Should have been able to read the rom file");
-    println!("rom to bytes:");
+    // Manually prints the rom instructions to the screen
+    // println!("rom to bytes:");
     for (i, byte) in rom.iter().enumerate() {
+        /*
         print!("{:02X} ", byte);
         if (i + 1) % 16 == 0 {
             println!("");
         }
-        game.memory[0x200 + i] = byte.to_owned();
+        // */
         if i + 0x200 > game.memory.len() {
             println!("Rom to long reading stopped");
             break;
         }
+        game.memory[0x200 + i] = byte.to_owned();
     }
 
     let mut window = Window::new(

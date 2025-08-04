@@ -7,7 +7,8 @@
 
 ## Emulation Tasks
 
-- [ ] Implement Remaining Instructions
+- [ ] Test and Debug Instructions
+  - Using corax89's chip8-test-rom
 - [ ] Dynamically Upload Rom
 - [ ] Connect Keyboard Controls
 - [ ] Setup Sound
@@ -27,3 +28,4 @@
 - [x] Implement Draw (DXYN) instruction
 - [x] Create Rust Unit Tests
 - [x] Manually Read IBM Logo Rom
+- [x] Implement Remaining Instructions

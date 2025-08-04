@@ -112,13 +112,19 @@ impl Chip8Sys {
             }
             0x7 => {
                 println!("Hit 0x7 - Add NN to reg[X]");
-                self.register[b as usize] += Chip8Sys::nn(c, d);
+                let nn = Chip8Sys::nn(c, d);
+                let reg_val = self.register[b as usize];
+                let result: u16 = reg_val as u16 + nn as u16;
                 println!(
-                    "register[{:X}] + {:02X} = {:02X}",
+                    "register[{:X}]({:X}) + {:02X} = {:02X}",
                     b,
-                    Chip8Sys::nn(c, d),
-                    self.register[b as usize]
+                    self.register[b as usize],
+                    nn, 
+                    result
                 );
+                // the docs don't say anything about handling a carry bit but I could get it off
+                // result before masking and saving it.
+                self.register[b as usize] = (result & 0xFF) as u8;
             }
             0x8 => match d {
                 0 => {
@@ -286,7 +292,7 @@ impl Chip8Sys {
                     }
                     0x1E => {
                         println!(" - Set I to I + Reg[x]");
-                        self.register_i += self.register[b as usize] as u16;
+                        self.register_i = (self.register_i + self.register[b as usize] as u16) & 0xFFFF;
 
                     }
                     0x29 => {
