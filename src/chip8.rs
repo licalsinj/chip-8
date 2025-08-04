@@ -2,8 +2,9 @@
 
 const EMPTY_MEMORY: [u8; 4096] = [0; 4096];
 const EMPTY_REGISTER: [u8; 16] = [0; 16];
-// const EMPTY_STACK: [u16; 16] = [0; 16];
+const EMPTY_STACK: [u16; 16] = [0; 16];
 const PIXEL_COLOR: u32 = 0x0000FF88;
+
 // This is the built in Chip-8 font that Roms expect to access
 const FONT: [u8; 80] = [
     0xF0, 0x90, 0x90, 0x90, 0xF0, // 0 loc 0x050
@@ -12,16 +13,16 @@ const FONT: [u8; 80] = [
     0xF0, 0x10, 0xF0, 0x10, 0xF0, // 3 loc 0x05F
     0x90, 0x90, 0xF0, 0x10, 0x10, // 4 loc 0x064
     0xF0, 0x80, 0xF0, 0x10, 0xF0, // 5 loc 0x069
-    0xF0, 0x80, 0xF0, 0x90, 0xF0, // 6 loc 0x06D
-    0xF0, 0x10, 0x20, 0x40, 0x40, // 7 loc 0x072
-    0xF0, 0x90, 0xF0, 0x90, 0xF0, // 8 loc 0x077
-    0xF0, 0x90, 0xF0, 0x10, 0xF0, // 9 loc 0x07C
-    0xF0, 0x90, 0xF0, 0x90, 0x90, // A loc 0x081
-    0xE0, 0x90, 0xE0, 0x90, 0xE0, // B loc 0x086
-    0xF0, 0x80, 0x80, 0x80, 0xF0, // C loc 0x08B
-    0xE0, 0x90, 0x90, 0x90, 0xE0, // D loc 0x090
-    0xF0, 0x80, 0xF0, 0x80, 0xF0, // E loc 0x095
-    0xF0, 0x80, 0xF0, 0x80, 0x80, // F loc 0x09A
+    0xF0, 0x80, 0xF0, 0x90, 0xF0, // 6 loc 0x06E
+    0xF0, 0x10, 0x20, 0x40, 0x40, // 7 loc 0x073
+    0xF0, 0x90, 0xF0, 0x90, 0xF0, // 8 loc 0x078
+    0xF0, 0x90, 0xF0, 0x10, 0xF0, // 9 loc 0x07D
+    0xF0, 0x90, 0xF0, 0x90, 0x90, // A loc 0x082
+    0xE0, 0x90, 0xE0, 0x90, 0xE0, // B loc 0x087
+    0xF0, 0x80, 0x80, 0x80, 0xF0, // C loc 0x08C
+    0xE0, 0x90, 0x90, 0x90, 0xE0, // D loc 0x091
+    0xF0, 0x80, 0xF0, 0x80, 0xF0, // E loc 0x096
+    0xF0, 0x80, 0xF0, 0x80, 0x80, // F loc 0x09B
 ];
 const FONT_RANGE_MIN: u8 = 0x050;
 const FONT_RANGE_MAX: u8 = 0x0A0;
@@ -30,12 +31,15 @@ pub struct Chip8Sys {
     pub memory: [u8; 4096],
     pub register: [u8; 16],
     pub register_i: u16,
-    // pub register_delay: u8, // Will be used eventually
-    // pub register_sound: u8,// Will be used eventually
+    pub delay_timer: u8, // Will be used eventually
+    pub sound_timer: u8, // Will be used eventually
     pub program_counter: u16,
-    // pub stack_pointer: u8,// Will be used eventually
-    // pub stack: [u16; 16],// Will be used eventually
+    pub stack_pointer: u8, // Will be used eventually
+    pub stack: [u16; 16],  // Will be used eventually
     pub frame_buffer: [u8; 256],
+    // NOTE: The wait for key press code is dependent on the length of keys <= registers
+    pub keys: [bool; 16], // represents the 16 keys of Chip-8. true = pressed
+    wait_for_key_press: Option<u8>, // for instruction 0xFXA0
 }
 
 impl Chip8Sys {
@@ -45,12 +49,14 @@ impl Chip8Sys {
             memory: EMPTY_MEMORY,
             register: EMPTY_REGISTER,
             register_i: 0,
-            // register_delay: 0,
-            // register_sound: 0,
+            delay_timer: 0,
+            sound_timer: 0,
             program_counter: 0x200, // initialize PC to start reading at 0x200
-            // stack_pointer: 0,
-            // stack: EMPTY_STACK,
+            stack_pointer: 0,
+            stack: EMPTY_STACK,
             frame_buffer: [0x00; 256],
+            keys: [false; 16],
+            wait_for_key_press: None,
         };
         // load the font in memeory
         for i in FONT_RANGE_MIN..FONT_RANGE_MAX {
@@ -96,6 +102,28 @@ impl Chip8Sys {
         }
         results
     }
+    pub fn check_waiting(&self) -> bool {
+        self.wait_for_key_press != None
+    }
+    pub fn get_key_press_reg(&self) -> Result<u8, &str> {
+        match self.wait_for_key_press {
+            Some(register) => match register {
+                0..=0xF => Ok(register),
+                // NOTE: This should never get hit because we're storing
+                // register with Chip8Sys::wait()
+                _ => panic!("Stored Register is bigger than 0xF (15)"),
+            },
+            None => Err("Wasn't waiting for key press"),
+        }
+    }
+    pub fn wait(&mut self, register: u8) -> Result<(), &str> {
+        if register > 0xF {
+            return Err("Must store value less than 0xF (15)");
+        }
+        self.wait_for_key_press = Some(register);
+        Ok(())
+    }
+    pub fn recieve_key_press(&mut self, key_num: u8) {}
     /*
     // This will print the frame_buffer to the console
     fn debug_print_frame_buffer(&self) {
@@ -124,4 +152,16 @@ mod test {
             FONT
         );
     }
+}
+#[test]
+// Test that the lowest number key pressed is stored
+fn test_wait_for_key_press_wait_access() {
+    let reg_x = 0x2;
+    // send clear screen to make sure that wait doesn't change
+    let mut chip8 = crate::decode::test::single_instruction_chip_8(0x00E0);
+    chip8.run();
+    assert_eq!(
+        chip8.wait_for_key_press, None,
+        "Chip-8 wait_for_key_press should not have been set to anything."
+    );
 }

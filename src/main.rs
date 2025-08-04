@@ -15,7 +15,8 @@ fn main() {
 
     // load the ROM from Disc
     // let file_path = "roms/1-chip8-logo.ch8";
-    let file_path = "roms/2-ibm-logo.ch8";
+    // let file_path = "roms/2-ibm-logo.ch8";
+    let file_path = "roms/4-flags.ch8";
     let mut file = File::open(file_path).expect("should have been able to open the file");
     let mut rom = [0; 256];
     file.read(&mut rom[..])
