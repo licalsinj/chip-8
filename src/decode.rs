@@ -111,20 +111,15 @@ impl Chip8Sys {
                 println!("register[{:02X}] = {:02X}", b, self.register[b as usize]);
             }
             0x7 => {
+                // TODO: Add test to for addition with overflow
                 println!("Hit 0x7 - Add NN to reg[X]");
                 let nn = Chip8Sys::nn(c, d);
                 let reg_val = self.register[b as usize];
                 let result: u16 = reg_val as u16 + nn as u16;
-                println!(
-                    "register[{:X}]({:X}) + {:02X} = {:02X}",
-                    b,
-                    self.register[b as usize],
-                    nn, 
-                    result
-                );
                 // the docs don't say anything about handling a carry bit but I could get it off
                 // result before masking and saving it.
                 self.register[b as usize] = (result & 0xFF) as u8;
+                self.register[0xF] = ((result & 0b1_0000_0000) >> 8) as u8;
             }
             0x8 => match d {
                 0 => {
@@ -148,57 +143,63 @@ impl Chip8Sys {
                 }
                 4 => {
                     println!("Hit 0x8XY4 - Set reg[X] to reg[X] PLUS reg[Y]");
-                    self.register[b as usize] =
-                        self.register[b as usize] + self.register[c as usize];
+                    // TODO: Add test to for addition with overflow
+                    let reg_x = self.register[b as usize];
+                    let reg_y = self.register[c as usize];
+                    let result: u16 = reg_x as u16 + reg_y as u16;
+                    // result before masking and saving it.
+                    self.register[b as usize] = (result & 0xFF) as u8;
+                    // set the carry bit 
+                    self.register[0xF] = ((result & 0b1_0000_0000) >> 8) as u8;
+                    println!("V{:X}: {:02X}, V{:X}: {:02X}, res: {:08b}, VF: {:02X}",b, self.register[b as usize],c, self.register[c as usize],result,self.register[0xF]);
                 }
                 5 => {
                     println!("Hit 0x8XY5 - Set reg[X] to reg[X] MINUS reg[Y]");
                     // VF should = NOT borrow
                     // figure out if we need to deal with an overflow case
                     if self.register[b as usize] < self.register[c as usize] {
-                        self.register[0xF] = 0;
                         // calculate the two's compliment of reg[x]
-                        let two_comp = (!self.register[c as usize]) + 1;
+                        let two_comp = (!self.register[c as usize]) as u16 + 1;
                         self.register[b as usize] =
-                            ((self.register[b as usize] + two_comp) & 0xFF) as u8;
+                            ((self.register[b as usize] as u16 + two_comp as u16) & 0xFF) as u8;
+                        self.register[0xF] = 0;
                     } else {
                         // otherwise we can just do it normal and set VF
+                        let overflow: i16 = self.register[b as usize] as i16 - self.register[c as usize] as i16;
+                        self.register[b as usize] = (overflow & 0xFF) as u8;
                         self.register[0xF] = 1;
-                        self.register[b as usize] =
-                            self.register[b as usize] - self.register[c as usize];
                     }
                 }
                 6 => {
                     println!("Hit 0x8X_6 - Set reg[X] to reg[X] / 2 (SHR)");
-                    // handle remainder when dividing by 2
-                    self.register[0xF] = self.register[b as usize] & 0x1;
-                    self.register[b as usize] =
-                        (self.register[b as usize] as f32 / 2.).floor() as u8;
+                    let overflow = self.register[b as usize] & 0x1;
+                    self.register[b as usize] >>= 1;
+                    // handle the overflow when shifting 
+                    self.register[0xF] = overflow;
                 }
                 7 => {
                     println!("Hit 0x8XY7 - Set reg[X] to reg[Y] MINUS reg[X]");
                     // VF should = NOT borrow
                     // figure out if we need to deal with an overflow case
                     if self.register[b as usize] > self.register[c as usize] {
-                        self.register[0xF] = 0;
                         // calculate the two's compliment of reg[x]
-                        let two_comp = (!self.register[b as usize]) + 1;
+                        let two_comp = (!self.register[b as usize]) as u16 + 1;
                         self.register[b as usize] =
-                            ((self.register[c as usize] + two_comp) & 0xFF) as u8;
+                            ((self.register[c as usize] as u16 + two_comp as u16) & 0xFF) as u8;
+                        self.register[0xF] = 0;
                     } else {
                         // otherwise we can just do it normal and set VF
+                        let overflow: i16 = 
+                            self.register[c as usize] as i16 - self.register[b as usize] as i16;
+                        self.register[b as usize] = (overflow & 0xFF) as u8;
                         self.register[0xF] = 1;
-                        self.register[b as usize] =
-                            self.register[c as usize] - self.register[b as usize];
                     }
                 }
                 0xE => {
                     println!("Hit 0x8X_E - Set reg[X] to reg[X] * 2 (SHL)");
+                    self.register[b as usize] <<= 1;
                     // handle overflow for multiplication
                     self.register[0xF] = (self.register[b as usize] & 0b1000) >> 3;
-                    // to avoid overflow in rust I'm blanking the most sig. bit
-                    self.register[b as usize] = self.register[b as usize] & 0b0111;
-                    self.register[b as usize] = self.register[b as usize] * 2;
                 }
                 // TODO: handle this error more gracefully
                 // probably by returning a result<T,E>
