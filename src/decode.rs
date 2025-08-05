@@ -1,3 +1,4 @@
+use crate::INC_INDEX;
 use crate::{bitwise::Bitwise, chip8::Chip8Sys};
 use rand::prelude::*;
 
@@ -37,6 +38,16 @@ impl Chip8Sys {
                 // But the design of the Chip-8 say that the number of keys < regs
                 Some(KeyPressed(k, r)) => self.register[r as usize] = k,
                 None => return,
+            }
+        }
+        // Delay timer 
+        if self.delay_timer > 0 {
+            self.delay_timer -= 1;
+        }
+        if self.sound_timer > 0 {
+            self.sound_timer -= 1;
+            if self.sound_timer == 0 {
+                self.is_playing_sound = false;
             }
         }
         // fetch section
@@ -130,16 +141,19 @@ impl Chip8Sys {
                     println!("Hit 0x8XY1 - Set reg[X] to reg[X] OR reg[Y]");
                     self.register[b as usize] =
                         self.register[b as usize] | self.register[c as usize];
+                    self.register[0xF] = 0;
                 }
                 2 => {
                     println!("Hit 0x8XY2 - Set reg[X] to reg[X] AND reg[Y]");
                     self.register[b as usize] =
                         self.register[b as usize] & self.register[c as usize];
+                    self.register[0xF] = 0;
                 }
                 3 => {
                     println!("Hit 0x8XY3 - Set reg[X] to reg[X] XOR reg[Y]");
                     self.register[b as usize] =
                         self.register[b as usize] ^ self.register[c as usize];
+                    self.register[0xF] = 0;
                 }
                 4 => {
                     println!("Hit 0x8XY4 - Set reg[X] to reg[X] PLUS reg[Y]");
@@ -173,7 +187,7 @@ impl Chip8Sys {
                 6 => {
                     println!("Hit 0x8X_6 - Set reg[X] to reg[X] / 2 (SHR)");
                     let overflow = self.register[b as usize] & 0x1;
-                    self.register[b as usize] >>= 1;
+                    self.register[b as usize] = self.register[c as usize] >> 1;
                     // handle the overflow when shifting 
                     self.register[0xF] = overflow;
                 }
@@ -197,7 +211,7 @@ impl Chip8Sys {
                 }
                 0xE => {
                     println!("Hit 0x8X_E - Set reg[X] to reg[X] * 2 (SHL)");
-                    self.register[b as usize] <<= 1;
+                    self.register[b as usize] = self.register[c as usize] << 1;
                     // handle overflow for multiplication
                     self.register[0xF] = (self.register[b as usize] & 0b1000) >> 3;
                 }
@@ -290,6 +304,7 @@ impl Chip8Sys {
                     0x18 => {
                         println!(" - Set Sound Timer with Reg[x]'s value");
                         self.sound_timer = self.register[b as usize];
+                        self.is_playing_sound = true;
                     }
                     0x1E => {
                         println!(" - Set I to I + Reg[x]");
@@ -317,11 +332,17 @@ impl Chip8Sys {
                         for count in 0..=b {
                             self.memory[(self.register_i + count as u16) as usize] = self.register[count as usize];
                         }
+                        if self.is_inc_index() {
+                            self.register_i = self.register_i + b as u16 + 1;
+                        }
                     }
                     0x65 => {
                         println!(" - read register reg[0] to reg[x] out of memory starting at the location stored in register I");
                         for count in 0..=b {
                             self.register[count as usize] = self.memory[(self.register_i + count as u16) as usize];
+                        }
+                        if self.is_inc_index() {
+                            self.register_i = self.register_i + b as u16 + 1;
                         }
                     }
                     _ => panic!(
@@ -376,10 +397,11 @@ impl Chip8Sys {
             // */
 
             // Need to get the u8 at x_loc y_loc
-            let mut fb_start = self.frame_buffer[(x_loc + y_loc) as usize].bit_vec();
+            let index = x_loc as usize + y_loc as usize & 0xFF;
+            let mut fb_start = self.frame_buffer[index].bit_vec();
             // In the case I start in the middle of a u8 in frame_buffer I get the overflow u8
             // I shouldn't ever get more than 2 u8s because sprites can only be 8 px wide
-            let mut fb_overflow = self.frame_buffer[(x_loc + y_loc + 1) as usize].bit_vec();
+            let mut fb_overflow = self.frame_buffer[index + 1].bit_vec();
             fb_start.append(&mut fb_overflow);
 
             // I need to build a result vec.
@@ -404,16 +426,17 @@ impl Chip8Sys {
             // affected by the sprite drawing
             result_vec.append(&mut fb_start[x_bit as usize + 8..].to_vec());
 
+            let index = (x_loc as usize + y_loc as usize) & 0xFF;
             // TODO: Fix the expect here
-            self.frame_buffer[(x_loc + y_loc) as usize] =
+            self.frame_buffer[index] =
                 u8::from_bit_vec(result_vec[..8].to_vec())
                     .expect("provided vector should be correct number of bits long.");
-            self.frame_buffer[(x_loc + y_loc + 1) as usize] =
+            self.frame_buffer[index + 1] =
                 u8::from_bit_vec(result_vec[8..].to_vec())
                     .expect("provided vector should be correct number of bits long.");
 
             // increment y by 8 bytes (64 bits) to get to the next row
-            y_loc += 8;
+            y_loc = ((y_loc as u16 + 8) & 0xFF) as u8;
             // also increment the memory location we're reading to find the next row of the sprite
             starting_loc += 1;
         }
@@ -1351,7 +1374,7 @@ pub mod test {
     // NOTE: Helper functions for testing
     // Helper function to build a Chip8Sys easily with 1 instruction at 200
     pub fn single_instruction_chip_8(instruction: u16) -> Chip8Sys {
-        let mut chip8 = Chip8Sys::new();
+        let mut chip8 = Chip8Sys::new(INC_INDEX);
         chip8.memory[0x200] = ((instruction & 0xFF00) >> 8) as u8;
         chip8.memory[0x201] = (instruction & 0xFF) as u8;
         chip8

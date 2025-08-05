@@ -7,11 +7,11 @@
 
 ## Emulation Tasks
 
-- [ ] Test and Debug Instructions
-  - Using corax89's chip8-test-rom
-- [ ] Dynamically Upload Rom
+- [ ] Implement Timer Setup
+- [ ] Test Quirks
 - [ ] Connect Keyboard Controls
 - [ ] Setup Sound
+- [ ] Dynamically Upload Rom
 - [ ] Compile to WASM for Demo
 
 ## Completed
@@ -29,3 +29,6 @@
 - [x] Create Rust Unit Tests
 - [x] Manually Read IBM Logo Rom
 - [x] Implement Remaining Instructions
+- [x] Test and Debug Instructions
+  - Using Timendus's chip-8 test suite
+  - <https://github.com/Timendus/chip8-test-suite>

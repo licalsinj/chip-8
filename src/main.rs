@@ -9,9 +9,12 @@ mod decode;
 
 pub const WIDTH: usize = 640 * 2;
 pub const HEIGHT: usize = 320 * 2;
+// passed when creating all new Chip8Sys
+// handles if FX55 & FX65 increment I index register
+pub const INC_INDEX: bool = true;
 
 fn main() {
-    let mut game = Chip8Sys::new();
+    let mut game = Chip8Sys::new(INC_INDEX);
 
     // load the ROM from Disc
     // let file_path = "roms/1-chip8-logo.ch8";
@@ -68,7 +71,7 @@ fn main() {
     )
     .expect("Unable to create the window");
 
-    window.set_target_fps(60);
+    window.set_target_fps(65);
 
     while window.is_open() && !window.is_key_down(Key::Escape) {
         window

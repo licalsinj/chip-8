@@ -1,4 +1,4 @@
-// use crate::{HEIGHT, WIDTH};
+use crate::INC_INDEX;
 
 const EMPTY_MEMORY: [u8; 4096] = [0; 4096];
 const EMPTY_REGISTER: [u8; 16] = [0; 16];
@@ -40,11 +40,14 @@ pub struct Chip8Sys {
     // NOTE: The wait for key press code is dependent on the length of keys <= registers
     pub keys: [bool; 16], // represents the 16 keys of Chip-8. true = pressed
     wait_for_key_press: Option<u8>, // for instruction 0xFXA0
+    pub is_playing_sound: bool,
+    // handles if FX55 & FX65 increment I index register
+    is_inc_index: bool,
 }
 
 impl Chip8Sys {
     // Creates a new Chip8Sys with default settings
-    pub fn new() -> Chip8Sys {
+    pub fn new(is_inc_index: bool) -> Chip8Sys {
         let mut new_chip_8_sys = Chip8Sys {
             memory: EMPTY_MEMORY,
             register: EMPTY_REGISTER,
@@ -57,6 +60,8 @@ impl Chip8Sys {
             frame_buffer: [0x00; 256],
             keys: [false; 16],
             wait_for_key_press: None,
+            is_playing_sound: false,
+            is_inc_index,
         };
         // load the font in memeory
         for i in FONT_RANGE_MIN..FONT_RANGE_MAX {
@@ -124,6 +129,9 @@ impl Chip8Sys {
         Ok(())
     }
     pub fn recieve_key_press(&mut self, key_num: u8) {}
+    pub fn is_inc_index(&self) -> bool {
+        self.is_inc_index
+    }
     /*
     // This will print the frame_buffer to the console
     fn debug_print_frame_buffer(&self) {
@@ -146,7 +154,7 @@ mod test {
     #[test]
     // Tests to make sure that we can create a new Chip8Sys with the font in the right place;
     fn create_new_chip_8_sys() {
-        let new_chip_8_sys = Chip8Sys::new();
+        let new_chip_8_sys = Chip8Sys::new(INC_INDEX);
         assert_eq!(
             new_chip_8_sys.memory[(FONT_RANGE_MIN as usize)..(FONT_RANGE_MAX as usize)],
             FONT
