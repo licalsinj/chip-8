@@ -1,5 +1,4 @@
-use crate::{INC_INDEX, WRAP_DRAW};
-use crate::{bitwise::Bitwise, chip8::Chip8Sys};
+use crate::chip8::Chip8Sys;
 use rand::prelude::*;
 
 struct KeyPressed(u8, u8);
@@ -248,11 +247,7 @@ impl Chip8Sys {
             }
             0xD => {
                 println!("Hit 0xD - Draw");
-                if self.is_wrap_draw() {
-                    self.wrap_draw(b, c, d);
-                } else {
-
-                }
+                self.draw(b, c, d);
             }
             0xE => {
                 println!("Hit 0xE - key press");
@@ -366,11 +361,8 @@ impl Chip8Sys {
             _ => panic!("0xN___ provided should be between 0x0 and 0xF."),
         }
     }
-    // TODO: Write a function that clips when you go over the line
-    fn clip_draw(&mut self, x: u8, y: u8, n: u8) {
-    }
     // Helper function to handle the Draw command logic 0xDXYN
-    fn wrap_draw(&mut self, x: u8, y: u8, n: u8) {
+    fn draw(&mut self, x: u8, y: u8, n: u8) {
         println!("Drawing {:02X} {:02X} {:02X}", x, y, n);
         // get the x and y location out of the x and y registers
         let x_loc = self.register[x as usize] % 64;
@@ -385,9 +377,10 @@ impl Chip8Sys {
             let fb_chunk_index = (y_loc * 8) + (x_loc as f32/8.).floor() as u8;
             // calculate the overflow (next) chunk of the frame frame_buffer
             let fb_chunk_index_next;
-            if (x_loc as f32 / 8.).floor() == 7. {
+            let is_edge_x = (x_loc as f32 / 8.).floor() == 7.;
+            if is_edge_x {
                 // In the case of drawing at the edge we want to wrap around on the same row
-               fb_chunk_index_next = fb_chunk_index - 7; 
+                fb_chunk_index_next = fb_chunk_index - 7;
             } else {
                 fb_chunk_index_next = fb_chunk_index + 1;
             }
@@ -397,10 +390,16 @@ impl Chip8Sys {
             let fb_chunk_index_next_original= self.frame_buffer[fb_chunk_index_next as usize];
             // Draw the bits using xor
             self.frame_buffer[fb_chunk_index as usize] ^= sprite_pxs >> offset;
-            self.frame_buffer[fb_chunk_index_next as usize] ^= (((sprite_pxs as u16) << (8 - offset)) & 0xFF) as u8;
             // Update the flag if fb was 1 and became 0
             let flag_for_index = !(self.frame_buffer[fb_chunk_index as usize] & fb_chunk_index_original) & self.frame_buffer[fb_chunk_index as usize] > 0;
-            let flag_for_next =!(self.frame_buffer[fb_chunk_index_next as usize] & fb_chunk_index_next_original) & self.frame_buffer[fb_chunk_index_next as usize] > 0;
+            // default to false so we don't mess with the flag during clipping
+            let mut flag_for_next = false; 
+            // Only do this if we're wrapping or we're clipping but not at the edge
+            println!("clipping {}, is_edge_x {}",!self.is_wrap_draw(), !is_edge_x);
+            if self.is_wrap_draw() | (!self.is_wrap_draw() & !is_edge_x) {
+                self.frame_buffer[fb_chunk_index_next as usize] ^= (((sprite_pxs as u16) << (8 - offset)) & 0xFF) as u8;
+                flag_for_next =!(self.frame_buffer[fb_chunk_index_next as usize] & fb_chunk_index_next_original) & self.frame_buffer[fb_chunk_index_next as usize] > 0;
+            }
             if flag_for_index | flag_for_next {
                 self.register[0xF] = 1;
             }
@@ -409,6 +408,10 @@ impl Chip8Sys {
             
             // If we just drew on the last line of the screen start drawing at the top
             if y_loc == 32 {
+                // if we're clipping just stop drawing
+                if !self.is_wrap_draw() {
+                    break;
+                }
                 y_loc = 0;
             }
             sprite_location += 1;
@@ -445,7 +448,7 @@ fn print_vec(v: &Vec<bool>, vec_name: &str) {
 
 #[cfg(test)]
 pub mod test {
-    use crate::{chip8, VF_RESET};
+    use crate::{INC_INDEX, VF_RESET, WRAP_DRAW};
 
     use super::*;
 

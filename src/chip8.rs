@@ -1,4 +1,3 @@
-use crate::{INC_INDEX, VF_RESET, WRAP_DRAW};
 use std::fs::File;
 use std::io::Read;
 
@@ -199,6 +198,7 @@ impl Chip8Sys {
 #[cfg(test)]
 mod test {
     use super::*;
+    use crate::{INC_INDEX, VF_RESET, WRAP_DRAW};
 
     #[test]
     // Tests to make sure that we can create a new Chip8Sys with the font in the right place;
@@ -213,7 +213,6 @@ mod test {
 #[test]
 // Test that the lowest number key pressed is stored
 fn test_wait_for_key_press_wait_access() {
-    let reg_x = 0x2;
     // send clear screen to make sure that wait doesn't change
     let mut chip8 = crate::decode::test::single_instruction_chip_8(0x00E0);
     chip8.run();

@@ -2,10 +2,10 @@ use chip8::Chip8Sys;
 use minifb::{Key, ScaleMode, Window, WindowOptions};
 use std::{thread, time};
 
-mod bitwise;
+// mod bitwise;
 mod chip8;
 mod decode;
-mod roms; // used for testing, may not be needed long term
+// mod roms; // used for testing, may not be needed long term
 
 pub const WIDTH: usize = 640 * 2;
 pub const HEIGHT: usize = 320 * 2;
@@ -13,7 +13,7 @@ pub const HEIGHT: usize = 320 * 2;
 // handles if FX55 & FX65 increment I index register
 pub const INC_INDEX: bool = true;
 pub const VF_RESET: bool = true;
-pub const WRAP_DRAW: bool = true;
+pub const WRAP_DRAW: bool = false;
 
 fn main() {
     let mut game = Chip8Sys::new(INC_INDEX, VF_RESET, WRAP_DRAW);
@@ -55,7 +55,7 @@ fn main() {
             .update_with_buffer(&game.display_buffer(), WIDTH, HEIGHT)
             .unwrap();
         game.run();
-        // thread::sleep(time::Duration::from_millis(50));
+        thread::sleep(time::Duration::from_millis(20));
     }
 }
 fn check_key_input(chip8: &mut Chip8Sys, window: &Window) {
