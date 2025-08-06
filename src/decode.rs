@@ -1,4 +1,4 @@
-use crate::INC_INDEX;
+use crate::{INC_INDEX, WRAP_DRAW};
 use crate::{bitwise::Bitwise, chip8::Chip8Sys};
 use rand::prelude::*;
 
@@ -248,7 +248,11 @@ impl Chip8Sys {
             }
             0xD => {
                 println!("Hit 0xD - Draw");
-                self.draw(b, c, d);
+                if self.is_wrap_draw() {
+                    self.wrap_draw(b, c, d);
+                } else {
+
+                }
             }
             0xE => {
                 println!("Hit 0xE - key press");
@@ -362,90 +366,58 @@ impl Chip8Sys {
             _ => panic!("0xN___ provided should be between 0x0 and 0xF."),
         }
     }
+    // TODO: Write a function that clips when you go over the line
+    fn clip_draw(&mut self, x: u8, y: u8, n: u8) {
+    }
     // Helper function to handle the Draw command logic 0xDXYN
-    // TODO: Expand this to handle printing at the edge correctly. Right now it wraps.
-    fn draw(&mut self, x: u8, y: u8, n: u8) {
-        // Prints debug values being sent to DXYN
-        // println!("x: {x} y:{y} n:{n}");
-
-        // Get X & Y Cordinates from register[X] and register[Y]
-        // This requires me to convert u8 to bits
-        // First figure out which u8 they're in
-        let x_loc = (self.register[x as usize] as f32 / 8.).floor() as u8;
-        let mut y_loc = ((self.register[y as usize] as u32 * 64) as f32 / 8.).floor() as u8;
-        // Then figure out which bit of the u8 is being referenced
-        let x_bit = (self.register[x as usize] % 8) as usize;
-        // let y_bit = self.register[y as usize] % 8;
-
-        // Get starting memory location of register_i
-        // This is where the rom will store the sprite it wants drawn
-        let mut starting_loc = self.register_i as usize;
-        // Prints debug frame buffer values as bits
-        /*
-        for (i, px) in self.frame_buffer.iter().enumerate() {
-            print!("{:08b}", px);
-            print!("_");
-            if i % 64 == 0 {
-                println!("");
-            }
-        }
-        println!();
-        */
-
-        // read memory n times to get the full sized sprite
+    fn wrap_draw(&mut self, x: u8, y: u8, n: u8) {
+        println!("Drawing {:02X} {:02X} {:02X}", x, y, n);
+        // get the x and y location out of the x and y registers
+        let x_loc = self.register[x as usize] % 64;
+        let mut y_loc= self.register[y as usize] % 32;
+        println!("at {}, {}", x_loc, y_loc);
+        // pull the sprite's location in memory out using register I as the starting location
+        let mut sprite_location = self.register_i;
         for _ in 0..n {
-            let sprite_pxs = self.memory[starting_loc].bit_vec();
-            // Prints debug sprite pixel info and x,y location including bits
-            /*
-            print_vec(&sprite_pxs, "sprite_pxs");
-            println!("x_loc: {x_loc} x_bit: {x_bit}");
-            println!("y_loc: {y_loc} y_bit: {y_bit}");
-            // */
-
-            // Need to get the u8 at x_loc y_loc
-            let index = x_loc as usize + y_loc as usize & 0xFF;
-            let mut fb_start = self.frame_buffer[index].bit_vec();
-            // In the case I start in the middle of a u8 in frame_buffer I get the overflow u8
-            // I shouldn't ever get more than 2 u8s because sprites can only be 8 px wide
-            let mut fb_overflow = self.frame_buffer[index + 1].bit_vec();
-            fb_start.append(&mut fb_overflow);
-
-            // I need to build a result vec.
-            // It's going to be filled with what's already on the screen from 0 to the starting x
-            // positon
-            let mut result_vec = fb_start[..x_bit as usize].to_vec();
-            // then I'll add the sprite data to the vec
-            for (loc, b) in fb_start[x_bit as usize..x_bit as usize + 8]
-                .iter()
-                .enumerate()
-            {
-                // XOR the value on the screen with the value that should be written to the screen
-                let xor_res = b ^ sprite_pxs[loc];
-                // in the event of turning off a pixel update reg[F] aka VF
-                if (!(b & xor_res) & b) != false {
-                    self.register[0xF] = 1;
-                    // println!("Register F is: {}", self.register[0xF]);
-                }
-                result_vec.push(xor_res);
+            // get the sprite's pixels from memory
+            let sprite_pxs = self.memory[sprite_location as usize];
+            // calculate the u8 (chunk) of the frame_buffer we'll be updating
+            let fb_chunk_index = (y_loc * 8) + (x_loc as f32/8.).floor() as u8;
+            // calculate the overflow (next) chunk of the frame frame_buffer
+            let fb_chunk_index_next;
+            if (x_loc as f32 / 8.).floor() == 7. {
+                // In the case of drawing at the edge we want to wrap around on the same row
+               fb_chunk_index_next = fb_chunk_index - 7; 
+            } else {
+                fb_chunk_index_next = fb_chunk_index + 1;
             }
-            // finally I'll add the leftover bits that were already on the screen and I don't want
-            // affected by the sprite drawing
-            result_vec.append(&mut fb_start[x_bit as usize + 8..].to_vec());
-
-            let index = (x_loc as usize + y_loc as usize) & 0xFF;
-            // TODO: Fix the expect here
-            self.frame_buffer[index] =
-                u8::from_bit_vec(result_vec[..8].to_vec())
-                    .expect("provided vector should be correct number of bits long.");
-            self.frame_buffer[index + 1] =
-                u8::from_bit_vec(result_vec[8..].to_vec())
-                    .expect("provided vector should be correct number of bits long.");
-
-            // increment y by 8 bytes (64 bits) to get to the next row
-            y_loc = ((y_loc as u16 + 8) & 0xFF) as u8;
-            // also increment the memory location we're reading to find the next row of the sprite
-            starting_loc += 1;
+            // Calculate the offset based on x's location
+            let offset = x_loc % 8;
+            let fb_chunk_index_original= self.frame_buffer[fb_chunk_index as usize];
+            let fb_chunk_index_next_original= self.frame_buffer[fb_chunk_index_next as usize];
+            // Draw the bits using xor
+            self.frame_buffer[fb_chunk_index as usize] ^= sprite_pxs >> offset;
+            self.frame_buffer[fb_chunk_index_next as usize] ^= (((sprite_pxs as u16) << (8 - offset)) & 0xFF) as u8;
+            // Update the flag if fb was 1 and became 0
+            let flag_for_index = !(self.frame_buffer[fb_chunk_index as usize] & fb_chunk_index_original) & self.frame_buffer[fb_chunk_index as usize] > 0;
+            let flag_for_next =!(self.frame_buffer[fb_chunk_index_next as usize] & fb_chunk_index_next_original) & self.frame_buffer[fb_chunk_index_next as usize] > 0;
+            if flag_for_index | flag_for_next {
+                self.register[0xF] = 1;
+            }
+            // increment Y
+            y_loc += 1;
+            
+            // If we just drew on the last line of the screen start drawing at the top
+            if y_loc == 32 {
+                y_loc = 0;
+            }
+            sprite_location += 1;
         }
+        /*
+        for byte in self.frame_buffer.iter() {
+            println!("{:08b}",byte);
+        }
+        // */
     }
     // helper function to get the last 3 nibbles of a command
     // commands coming in as 0x?NNN will use this
@@ -653,7 +625,7 @@ pub mod test {
     }
 
     #[test]
-    // Tests Load Register X with NN; 0x6XNN
+    // Tests Load Register X with NN; 0x6XNN 
     fn test_load_register() {
         // set register 0xA to be 0x88
         let mut chip8 = single_instruction_chip_8(0x6A88);
@@ -1380,7 +1352,7 @@ pub mod test {
     // NOTE: Helper functions for testing
     // Helper function to build a Chip8Sys easily with 1 instruction at 200
     pub fn single_instruction_chip_8(instruction: u16) -> Chip8Sys {
-        let mut chip8 = Chip8Sys::new(INC_INDEX, VF_RESET);
+        let mut chip8 = Chip8Sys::new(INC_INDEX, VF_RESET, WRAP_DRAW);
         chip8.memory[0x200] = ((instruction & 0xFF00) >> 8) as u8;
         chip8.memory[0x201] = (instruction & 0xFF) as u8;
         chip8

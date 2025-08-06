@@ -2,7 +2,7 @@ use crate::chip8::Chip8Sys;
 // extending Chip8Sys to load roms
 impl Chip8Sys {
     // A simple rom that prints the F sprite on the screen at (0,0)
-    /*
+    // /*
     pub fn load_dxyn_rom_simple(&mut self) -> &mut Self {
         // clear screen
         self.memory[0x200] = 0x00;

@@ -1,4 +1,6 @@
-use crate::{INC_INDEX, VF_RESET};
+use crate::{INC_INDEX, VF_RESET, WRAP_DRAW};
+use std::fs::File;
+use std::io::Read;
 
 const EMPTY_MEMORY: [u8; 4096] = [0; 4096];
 const EMPTY_REGISTER: [u8; 16] = [0; 16];
@@ -45,11 +47,12 @@ pub struct Chip8Sys {
     is_inc_index: bool,
     // quirk that resets reg[0xF] to 0 when AND, OR, and XOR are set (0x8XY1-3)
     is_register_f_reset: bool,
+    is_wrap_draw: bool,
 }
 
 impl Chip8Sys {
     // Creates a new Chip8Sys with default settings
-    pub fn new(is_inc_index: bool, is_register_f_reset: bool) -> Chip8Sys {
+    pub fn new(is_inc_index: bool, is_register_f_reset: bool, is_wrap_draw: bool) -> Chip8Sys {
         let mut new_chip_8_sys = Chip8Sys {
             memory: EMPTY_MEMORY,
             register: EMPTY_REGISTER,
@@ -65,6 +68,7 @@ impl Chip8Sys {
             is_playing_sound: false,
             is_inc_index,
             is_register_f_reset,
+            is_wrap_draw,
         };
         // load the font in memeory
         for i in FONT_RANGE_MIN..FONT_RANGE_MAX {
@@ -137,6 +141,9 @@ impl Chip8Sys {
     pub fn is_register_f_reset(&self) -> bool {
         self.is_register_f_reset
     }
+    pub fn is_wrap_draw(&self) -> bool {
+        self.is_wrap_draw
+    }
     /*
     // This will print the frame_buffer to the console
     fn debug_print_frame_buffer(&self) {
@@ -150,6 +157,43 @@ impl Chip8Sys {
         }
     }
     // */
+    pub fn load_rom(&mut self, file_path: String) -> &mut Self {
+        let mut file = File::open(file_path).expect("should have been able to open the file");
+        let mut rom = [0; 0x1000];
+        file.read(&mut rom[..])
+            .expect("Should have been able to read the rom file");
+        /*
+        println!(
+            "Game memory length: {}, {:X}",
+            game.memory.len(),
+            game.memory.len()
+        );
+        // */
+        // Manually prints the rom instructions to the screen
+        // println!("rom to bytes:");
+        for (i, byte) in rom.iter().enumerate() {
+            /*
+            // Manually prints the rom instructions to the screen
+            print!("{:02X} ", byte);
+            if (i + 1) % 16 == 0 {
+                println!("");
+            }
+            // prints what i'm loading into where in memory
+            println!(
+                "{:02x}: load {:02X} in memory location {:02X}",
+                i,
+                byte,
+                0x200 + i
+            );
+            // */
+            if i + 0x200 > self.memory.len() - 1 {
+                println!("Rom to long reading stopped");
+                break;
+            }
+            self.memory[0x200 + i] = byte.to_owned();
+        }
+        self
+    }
 }
 
 #[cfg(test)]
@@ -159,7 +203,7 @@ mod test {
     #[test]
     // Tests to make sure that we can create a new Chip8Sys with the font in the right place;
     fn create_new_chip_8_sys() {
-        let new_chip_8_sys = Chip8Sys::new(INC_INDEX, VF_RESET);
+        let new_chip_8_sys = Chip8Sys::new(INC_INDEX, VF_RESET, WRAP_DRAW);
         assert_eq!(
             new_chip_8_sys.memory[(FONT_RANGE_MIN as usize)..(FONT_RANGE_MAX as usize)],
             FONT

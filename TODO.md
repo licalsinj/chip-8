@@ -8,8 +8,7 @@
 
 ## Emulation Tasks
 
-- [ ] Get Display wrapping to work
-- [ ] Turn Load Rom into a Chip8Sys function
+- [ ] Get Display clipping to work
 - [ ] Automate Timendus' tests
   - Basically compare the FB to a successful test and then you'll know if it fails
 - [ ] Get Controls to be more responsive
@@ -17,6 +16,8 @@
 - [ ] Dynamically Upload Rom
 - [ ] Compile to WASM for Demo
 - [ ] Write a dump rom function to get state of Chip-8
+- [ ] Understand and implement vblank after drawing sprites]
+  - This is causing me to fail the display wait quirk 
 
 ## Completed
 
@@ -39,3 +40,6 @@
 - [x] Implement Timer Setup
 - [x] Test Quirks
 - [x] Connect Keyboard Controls
+- [x] Turn Load Rom into a Chip8Sys function
+- [x] Get Display wrapping to work
+

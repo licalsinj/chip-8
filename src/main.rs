@@ -1,6 +1,6 @@
 use chip8::Chip8Sys;
 use minifb::{Key, ScaleMode, Window, WindowOptions};
-use std::{fs::File, io::Read, thread, time};
+use std::{thread, time};
 
 mod bitwise;
 mod chip8;
@@ -13,54 +13,27 @@ pub const HEIGHT: usize = 320 * 2;
 // handles if FX55 & FX65 increment I index register
 pub const INC_INDEX: bool = true;
 pub const VF_RESET: bool = true;
+pub const WRAP_DRAW: bool = true;
 
 fn main() {
-    let mut game = Chip8Sys::new(INC_INDEX, VF_RESET);
+    let mut game = Chip8Sys::new(INC_INDEX, VF_RESET, WRAP_DRAW);
 
     // load the ROM from Disc
     // let file_path = "roms/1-chip8-logo.ch8";
     // let file_path = "roms/2-ibm-logo.ch8";
     // let file_path = "roms/3-corax+.ch8";
     // let file_path = "roms/4-flags.ch8";
-    // let file_path = "roms/5-quirks.ch8";
-    // game.memory[0x1FF] = 1;
-    let file_path = "roms/6-keypad.ch8";
-    // let file_path = "roms/walking_man.ch8";
-    let mut file = File::open(file_path).expect("should have been able to open the file");
-    let mut rom = [0; 0x1000];
-    file.read(&mut rom[..])
-        .expect("Should have been able to read the rom file");
-    /*
-    println!(
-        "Game memory length: {}, {:X}",
-        game.memory.len(),
-        game.memory.len()
-    );
-    // */
-    // Manually prints the rom instructions to the screen
-    // println!("rom to bytes:");
-    for (i, byte) in rom.iter().enumerate() {
-        /*
-        // Manually prints the rom instructions to the screen
-        print!("{:02X} ", byte);
-        if (i + 1) % 16 == 0 {
-            println!("");
-        }
-        // prints what i'm loading into where in memory
-        println!(
-            "{:02x}: load {:02X} in memory location {:02X}",
-            i,
-            byte,
-            0x200 + i
-        );
-        // */
-        if i + 0x200 > game.memory.len() - 1 {
-            println!("Rom to long reading stopped");
-            break;
-        }
-        game.memory[0x200 + i] = byte.to_owned();
-    }
+    let file_path = "roms/5-quirks.ch8";
     // When running quirks rom hardcode this memory spot to auto run Chip-8
+    // game.memory[0x1FF] = 1;
+    // let file_path = "roms/6-keypad.ch8";
+    // let file_path = "roms/walking_man.ch8";
+
+    game.load_rom(String::from(file_path));
+
+    // game.memory = [0; 0x1000];
+    // Old way
+    // game.load_dxyn_rom_simple();
 
     let mut window = Window::new(
         "Chip 8 - Press ESC to exit",
