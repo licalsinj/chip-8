@@ -33,7 +33,7 @@ fn main() {
 
     // game.memory = [0; 0x1000];
     // Old way
-    // game.load_dxyn_rom_simple();
+    // game.load_dxyn_rom_adv();
 
     let mut window = Window::new(
         "Chip 8 - Press ESC to exit",

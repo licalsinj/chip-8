@@ -365,8 +365,15 @@ impl Chip8Sys {
     fn draw(&mut self, x: u8, y: u8, n: u8) {
         println!("Drawing {:02X} {:02X} {:02X}", x, y, n);
         // get the x and y location out of the x and y registers
-        let x_loc = self.register[x as usize] % 64;
-        let mut y_loc= self.register[y as usize] % 32;
+        let x_loc;
+        let mut y_loc;
+        //if self.is_wrap_draw() {
+            x_loc = self.register[x as usize] % 64;
+            y_loc = self.register[y as usize] % 32;
+        //} else {
+        //    x_loc = self.register[x as usize] & 0b0111_1111;
+        //    y_loc = self.register[y as usize] & 0b0011_1111;
+        // }
         println!("at {}, {}", x_loc, y_loc);
         // pull the sprite's location in memory out using register I as the starting location
         let mut sprite_location = self.register_i;
@@ -391,16 +398,25 @@ impl Chip8Sys {
             // Draw the bits using xor
             self.frame_buffer[fb_chunk_index as usize] ^= sprite_pxs >> offset;
             // Update the flag if fb was 1 and became 0
-            let flag_for_index = !(self.frame_buffer[fb_chunk_index as usize] & fb_chunk_index_original) & self.frame_buffer[fb_chunk_index as usize] > 0;
+            let flag_for_index = !(self.frame_buffer[fb_chunk_index as usize] & fb_chunk_index_original) & fb_chunk_index_original;
+            println!("flag_for_index: ");
+            println!("original: {:08b}", fb_chunk_index_original);
+            println!("new     : {:08b}", self.frame_buffer[fb_chunk_index as usize]);
+            println!("flag    : {:08b}", flag_for_index);
             // default to false so we don't mess with the flag during clipping
-            let mut flag_for_next = false; 
+            let mut flag_for_next = 0; 
             // Only do this if we're wrapping or we're clipping but not at the edge
             println!("clipping {}, is_edge_x {}",!self.is_wrap_draw(), !is_edge_x);
             if self.is_wrap_draw() | (!self.is_wrap_draw() & !is_edge_x) {
                 self.frame_buffer[fb_chunk_index_next as usize] ^= (((sprite_pxs as u16) << (8 - offset)) & 0xFF) as u8;
-                flag_for_next =!(self.frame_buffer[fb_chunk_index_next as usize] & fb_chunk_index_next_original) & self.frame_buffer[fb_chunk_index_next as usize] > 0;
+                flag_for_next = !(self.frame_buffer[fb_chunk_index_next as usize] & fb_chunk_index_next_original) & fb_chunk_index_next_original;
             }
-            if flag_for_index | flag_for_next {
+            println!("flag_for_next: ");
+            println!("original: {:08b}", fb_chunk_index_next_original);
+            println!("new     : {:08b}", self.frame_buffer[fb_chunk_index_next as usize]);
+            println!("flag    : {:08b}", flag_for_next);
+            if (flag_for_index != 0) | (flag_for_next != 0) {
+                println!("VF SET: index: {}, next: {}", flag_for_index, flag_for_next);
                 self.register[0xF] = 1;
             }
             // increment Y
