@@ -14,16 +14,17 @@ pub const HEIGHT: usize = 320 * 2;
 pub const INC_INDEX: bool = true;
 pub const VF_RESET: bool = true;
 pub const WRAP_DRAW: bool = false;
+pub const MOD_VX_IN_PLACE: bool = false;
 
 fn main() {
-    let mut game = Chip8Sys::new(INC_INDEX, VF_RESET, WRAP_DRAW);
+    let mut game = Chip8Sys::new_chip_8();
 
     // load the ROM from Disc
     // let file_path = "roms/1-chip8-logo.ch8";
     // let file_path = "roms/2-ibm-logo.ch8";
     // let file_path = "roms/3-corax+.ch8";
-    // let file_path = "roms/4-flags.ch8";
-    let file_path = "roms/5-quirks.ch8";
+    let file_path = "roms/4-flags.ch8";
+    // let file_path = "roms/5-quirks.ch8";
     // When running quirks rom hardcode this memory spot to auto run Chip-8
     // game.memory[0x1FF] = 1;
     // let file_path = "roms/6-keypad.ch8";
@@ -49,6 +50,7 @@ fn main() {
 
     window.set_target_fps(60);
 
+    let mut count = 0;
     while window.is_open() && !window.is_key_down(Key::Escape) {
         check_key_input(&mut game, &window);
         window
@@ -56,7 +58,10 @@ fn main() {
             .unwrap();
         game.run();
         thread::sleep(time::Duration::from_millis(20));
+        count += 1;
     }
+    println!("Count: {}", count);
+    println!("{:?}", game.frame_buffer);
 }
 fn check_key_input(chip8: &mut Chip8Sys, window: &Window) {
     chip8.keys[0] = window.is_key_down(Key::X);

@@ -9,15 +9,9 @@
 
 ## Emulation Tasks
 
-- [ ] Get Display clipping to work
-- [ ] Automate Timendus' tests
-  - Basically compare the FB to a successful test and then you'll know if it fails
 - [ ] Setup Sound
 - [ ] Write a dump rom function to get state of Chip-8
 - [ ] Get Controls to be more responsive
-- [ ] Understand and implement vblank after drawing sprites
-  - This is causing me to fail the display wait quirk
-  - I think the delay timer not being on its own thread also causes that problem
 
   ### Front End Wrapper
 
@@ -49,3 +43,11 @@
 - [x] Connect Keyboard Controls
 - [x] Turn Load Rom into a Chip8Sys function
 - [x] Get Display wrapping to work
+- [x] Get Display clipping to work
+- [x] Automate Timendus' tests
+  - Basically compare the FB to a successful test and then you'll know if it fails
+- [x] Understand and implement vblank after drawing sprites
+  - This is causing me to fail the display wait quirk
+  - I think the delay timer not being on its own thread also causes that problem
+  - This is specific to advanced chip-8s that have scrolling. I'm focusing on just the 
+      regular chip-8 and so it's not a problem right now.

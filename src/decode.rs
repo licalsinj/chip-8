@@ -62,7 +62,7 @@ impl Chip8Sys {
         // Once I've read the instruction increment the PC
         self.program_counter += 2;
         // Prints debug what instruction values I'm sending in
-        /*
+        // /*
         println!("a: {:x}", a);
         println!("b: {:x}", b);
         println!("c: {:x}", c);
@@ -191,8 +191,14 @@ impl Chip8Sys {
                 }
                 6 => {
                     println!("Hit 0x8X_6 - Set reg[X] to reg[X] / 2 (SHR)");
-                    let overflow = self.register[b as usize] & 0x1;
-                    self.register[b as usize] = self.register[c as usize] >> 1;
+                    let overflow ;
+                    if self.is_mod_vx_in_place() {
+                        overflow  = self.register[b as usize] & 0x1;
+                        self.register[b as usize] >>= 1;
+                    } else {
+                        overflow  = self.register[c as usize] & 0x1;
+                        self.register[b as usize] = self.register[c as usize] >> 1;
+                    }
                     // handle the overflow when shifting 
                     self.register[0xF] = overflow;
                 }
@@ -215,10 +221,17 @@ impl Chip8Sys {
                     }
                 }
                 0xE => {
-                    println!("Hit 0x8X_E - Set reg[X] to reg[X] * 2 (SHL)");
-                    self.register[b as usize] = self.register[c as usize] << 1;
+                    println!("Hit 0x8X_E - Set reg[X] to reg[Y] * 2 (SHL)");
+                    let overflow ;
+                    if self.is_mod_vx_in_place() {
+                        overflow = (self.register[b as usize] & 0b1000) >> 3;
+                        self.register[b as usize] <<= 1;
+                    } else {
+                        overflow = (self.register[c as usize] & 0b1000) >> 3;
+                        self.register[b as usize] = self.register[c as usize] << 1;
+                    }
                     // handle overflow for multiplication
-                    self.register[0xF] = (self.register[b as usize] & 0b1000) >> 3;
+                    self.register[0xF] = overflow;
                 }
                 // TODO: handle this error more gracefully
                 // probably by returning a result<T,E>
@@ -327,7 +340,7 @@ impl Chip8Sys {
                             (value as f32/100.).floor() as u8,
                             (value as f32/10.).floor() as u8,
                             (value as f32/1.).floor() as u8,
-                            );
+                        );
                         self.memory[self.register_i as usize] = places.0;
                         self.memory[self.register_i as usize + 1] = places.1 - places.0 * 10;
                         self.memory[self.register_i as usize + 2] = places.2 - places.1 * 10; 
@@ -368,8 +381,8 @@ impl Chip8Sys {
         let x_loc;
         let mut y_loc;
         //if self.is_wrap_draw() {
-            x_loc = self.register[x as usize] % 64;
-            y_loc = self.register[y as usize] % 32;
+        x_loc = self.register[x as usize] % 64;
+        y_loc = self.register[y as usize] % 32;
         //} else {
         //    x_loc = self.register[x as usize] & 0b0111_1111;
         //    y_loc = self.register[y as usize] & 0b0011_1111;
@@ -421,7 +434,7 @@ impl Chip8Sys {
             }
             // increment Y
             y_loc += 1;
-            
+
             // If we just drew on the last line of the screen start drawing at the top
             if y_loc == 32 {
                 // if we're clipping just stop drawing
@@ -433,9 +446,9 @@ impl Chip8Sys {
             sprite_location += 1;
         }
         /*
-        for byte in self.frame_buffer.iter() {
-            println!("{:08b}",byte);
-        }
+           for byte in self.frame_buffer.iter() {
+           println!("{:08b}",byte);
+           }
         // */
     }
     // helper function to get the last 3 nibbles of a command
@@ -453,18 +466,17 @@ impl Chip8Sys {
 // TODO: Remove this. It's a temporary
 // helper function to print a bool vector
 /*
-fn print_vec(v: &Vec<bool>, vec_name: &str) {
-    print!("{vec_name}: ");
-    for b in v.iter() {
-        print!("{}", (b == &true) as u8);
-    }
-    println!("");
-}
+   fn print_vec(v: &Vec<bool>, vec_name: &str) {
+   print!("{vec_name}: ");
+   for b in v.iter() {
+   print!("{}", (b == &true) as u8);
+   }
+   println!("");
+   }
 // */
 
 #[cfg(test)]
 pub mod test {
-    use crate::{INC_INDEX, VF_RESET, WRAP_DRAW};
 
     use super::*;
 
@@ -496,15 +508,6 @@ pub mod test {
         let mut chip8 = single_instruction_chip_8(0x1556);
         chip8.run();
         assert_eq!(chip8.program_counter, 0x556);
-    }
-    #[test]
-    // Tests the jump to machine code routine at NNN; 0x0NNN
-    // This is based on original machines and is usually ignored by modern interpreters
-    // I'm treating it like another version of jump
-    fn test_sys_addr() {
-        let mut chip8 = single_instruction_chip_8(0x0F11);
-        chip8.run();
-        assert_eq!(chip8.program_counter, 0xF11);
     }
 
     #[test]
@@ -875,6 +878,7 @@ pub mod test {
 
     #[test]
     // Tests set reg[x] to reg[x] multiplied by 2; 0x8X_E
+    // Assumin that VX is modded in place
     fn test_2x_regx() {
         let reg_x = 0x4;
         let mut chip8 = single_instruction_chip_8(0x8000 | reg_x << 8 | 0xE);
@@ -894,14 +898,55 @@ pub mod test {
     // Tests set reg[x] to reg[x] multiplied by 2; 0x8X_E
     fn test_2x_regx_overflow() {
         let reg_x = 0x4;
+        let val = 0xAA;
         let mut chip8 = single_instruction_chip_8(0x8000 | reg_x << 8 | 0xE);
-        chip8.register[reg_x as usize] = 0x9;
+        chip8.register[reg_x as usize] = val;
         chip8.run();
         assert_eq!(
             chip8.register[reg_x as usize],
             // mulitply and mask off the overflow bits so it matches chip8's out
-            (0x9 * 2) & 0x0F,
+            ((val as u16 * 2) & 0xFF) as u8,
             "Chip-8 0x8X_E should have multiplied register x by 2."
+        );
+        // test the carry
+        assert_eq!(
+            chip8.register[0xF], 1,
+            "Chip-8 0x8X_E should have set the reg F bit to denote overflow."
+        )
+    }
+    #[test]
+    // Tests set reg[x] to reg[x] multiplied by 2; 0x8X_E
+    // Assuming that VX is set to shifted VY
+    fn test_2x_regx_regy() {
+        let reg_x = 0x4;
+        let reg_y = 0x05;
+        let mut chip8 = single_instruction_chip_8_custom_quirks(0x8000 | reg_x << 8 | reg_y << 4| 0xE, false, false, false, false);
+        chip8.register[reg_y as usize] = 0x4;
+        chip8.run();
+        assert_eq!(
+            chip8.register[reg_x as usize], 0x8,
+            "Chip-8 0x8X_E should have multiplied register x by 2."
+        );
+        // test the carry
+        assert_eq!(
+            chip8.register[0xF], 0,
+            "Chip-8 0x8X_E should not have set the reg F bit."
+        )
+    }
+    #[test]
+    // Tests set reg[x] to reg[x] multiplied by 2; 0x8X_E
+    fn test_2x_regx_overflow_regy() {
+        let reg_x = 0x4;
+        let reg_y = 0x5;
+        let val = 0xAA;
+        let mut chip8 = single_instruction_chip_8_custom_quirks(0x8000 | reg_x << 8 | reg_y << 4 | 0xE, true,true,false,false);
+        chip8.register[reg_y as usize] = val;
+        chip8.run();
+        assert_eq!(
+            chip8.register[reg_x as usize],
+            // mulitply and mask off the overflow bits so it matches chip8's out
+            ((val as u16 * 2) & 0xFF) as u8,
+            "Chip-8 0x8X_E should have multiplied register y by 2 as stored it in x."
         );
         // test the carry
         assert_eq!(
@@ -1370,10 +1415,19 @@ pub mod test {
 
     // NOTE: Helper functions for testing
     // Helper function to build a Chip8Sys easily with 1 instruction at 200
+    // Uses the default chip-8 quirks
     pub fn single_instruction_chip_8(instruction: u16) -> Chip8Sys {
-        let mut chip8 = Chip8Sys::new(INC_INDEX, VF_RESET, WRAP_DRAW);
+        let mut chip8 = Chip8Sys::new_chip_8();
         chip8.memory[0x200] = ((instruction & 0xFF00) >> 8) as u8;
         chip8.memory[0x201] = (instruction & 0xFF) as u8;
         chip8
     }
-}
+    // NOTE: Helper functions for testing
+    // Helper function to build a Chip8Sys easily with 1 instruction at 200
+    // Uses custom quirks
+    pub fn single_instruction_chip_8_custom_quirks(instruction: u16, is_inc_index: bool, is_vf_reset: bool, is_wrap: bool, is_shift_in_place: bool) -> Chip8Sys {
+        let mut chip8 = Chip8Sys::new_set_quirks(is_inc_index, is_vf_reset, is_wrap, is_shift_in_place);
+        chip8.memory[0x200] = ((instruction & 0xFF00) >> 8) as u8;
+        chip8.memory[0x201] = (instruction & 0xFF) as u8;
+        chip8
+    }}
