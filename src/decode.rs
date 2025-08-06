@@ -63,7 +63,7 @@ impl Chip8Sys {
         // Once I've read the instruction increment the PC
         self.program_counter += 2;
         // Prints debug what instruction values I'm sending in
-        // /*
+        /*
         println!("a: {:x}", a);
         println!("b: {:x}", b);
         println!("c: {:x}", c);
@@ -85,7 +85,7 @@ impl Chip8Sys {
                         self.stack_pointer -= 1;
                     }
                     // SYS addr
-                    _ => self.program_counter = Chip8Sys::nnn(b, c, d),
+                    _ =>  (), // self.program_counter = Chip8Sys::nnn(b, c, d),
                 }
             }
             0x1 => {
@@ -141,19 +141,25 @@ impl Chip8Sys {
                     println!("Hit 0x8XY1 - Set reg[X] to reg[X] OR reg[Y]");
                     self.register[b as usize] =
                         self.register[b as usize] | self.register[c as usize];
-                    self.register[0xF] = 0;
+                    if self.is_register_f_reset() {
+                        self.register[0xF] = 0;
+                    }
                 }
                 2 => {
                     println!("Hit 0x8XY2 - Set reg[X] to reg[X] AND reg[Y]");
                     self.register[b as usize] =
                         self.register[b as usize] & self.register[c as usize];
-                    self.register[0xF] = 0;
+                    if self.is_register_f_reset() {
+                        self.register[0xF] = 0;
+                    }
                 }
                 3 => {
                     println!("Hit 0x8XY3 - Set reg[X] to reg[X] XOR reg[Y]");
                     self.register[b as usize] =
                         self.register[b as usize] ^ self.register[c as usize];
-                    self.register[0xF] = 0;
+                    if self.is_register_f_reset() {
+                        self.register[0xF] = 0;
+                    }
                 }
                 4 => {
                     println!("Hit 0x8XY4 - Set reg[X] to reg[X] PLUS reg[Y]");
@@ -467,7 +473,7 @@ fn print_vec(v: &Vec<bool>, vec_name: &str) {
 
 #[cfg(test)]
 pub mod test {
-    use crate::chip8;
+    use crate::{chip8, VF_RESET};
 
     use super::*;
 
@@ -1374,7 +1380,7 @@ pub mod test {
     // NOTE: Helper functions for testing
     // Helper function to build a Chip8Sys easily with 1 instruction at 200
     pub fn single_instruction_chip_8(instruction: u16) -> Chip8Sys {
-        let mut chip8 = Chip8Sys::new(INC_INDEX);
+        let mut chip8 = Chip8Sys::new(INC_INDEX, VF_RESET);
         chip8.memory[0x200] = ((instruction & 0xFF00) >> 8) as u8;
         chip8.memory[0x201] = (instruction & 0xFF) as u8;
         chip8

@@ -96,4 +96,65 @@ impl Chip8Sys {
         self.memory[0x231] = 0x00;
         self
     }
+    // Will draw a 3x3 square on the screen and then move it to the right one to test wrapping
+    pub fn load_dxyn_walking(&mut self) {
+        // A variable so that if I insert a line of code I don't have to update the index of
+        // everything
+        let mut mem_loc = 0x200;
+        let x = 0x0;
+        let y = 0x1;
+        // Make the 3x3 sprite
+        self.memory[0x00] = 0b1110_0000;
+        self.memory[0x01] = 0b1110_0000;
+        self.memory[0x02] = 0b1110_0000;
+
+        // Initialization
+        // Set VX and VY to 0,0
+        // 0x6XNN
+        self.memory[mem_loc] = 0x60 | x;
+        self.memory[mem_loc + 1] = 0x00;
+        mem_loc += 2;
+        self.memory[mem_loc] = 0x60 | y;
+        self.memory[mem_loc + 1] = 0b0001_1100;
+        // set I register to the sprite's location at 0x000
+        mem_loc += 2;
+        self.memory[mem_loc] = 0xA0;
+        self.memory[mem_loc + 1] = 0x00;
+
+        // Main Loop
+        // Clear the screen
+        mem_loc = 0x210;
+        self.memory[mem_loc] = 0x00;
+        self.memory[mem_loc + 1] = 0xE0;
+        // Draw the sprite at Vx & Vy
+        mem_loc += 2;
+        self.memory[mem_loc] = 0xD0 | x;
+        self.memory[mem_loc + 1] = y << 4 | 3;
+        // Increment X
+        mem_loc += 2;
+        self.memory[mem_loc] = 0x70 | x;
+        self.memory[mem_loc + 1] = 0x01;
+        // Check if X is equal to 64
+        // 0x3XNN VX != 0b0100_0000
+        mem_loc += 2;
+        self.memory[mem_loc] = 0x30 | x;
+        self.memory[mem_loc + 1] = 0b0100_0000;
+        // Jump back to the begining if we don't need to reset.
+        mem_loc += 2;
+        self.memory[mem_loc] = 0x12;
+        self.memory[mem_loc + 1] = 0x10;
+        // if it is equal to 64 we'll skip the above and run these two commands
+        // increment Y
+        mem_loc += 2;
+        self.memory[mem_loc] = 0x70 | y;
+        self.memory[mem_loc + 1] = 0x01;
+        // reset x to 0
+        mem_loc += 2;
+        self.memory[mem_loc] = 0x60 | x;
+        self.memory[mem_loc + 1] = 0x00;
+        // Jump back to clear screen 0x210
+        mem_loc += 2;
+        self.memory[mem_loc] = 0x12;
+        self.memory[mem_loc + 1] = 0x10;
+    }
 }

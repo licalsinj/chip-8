@@ -4,15 +4,19 @@
 
 - [ ] Fix the various TODO: left in the code
 - [ ] Convert this to a library instead of a binary
+- [ ] Implement delay and sound timer on their own threads?
 
 ## Emulation Tasks
 
-- [ ] Implement Timer Setup
-- [ ] Test Quirks
-- [ ] Connect Keyboard Controls
+- [ ] Get Display wrapping to work
+- [ ] Turn Load Rom into a Chip8Sys function
+- [ ] Automate Timendus' tests
+  - Basically compare the FB to a successful test and then you'll know if it fails
+- [ ] Get Controls to be more responsive
 - [ ] Setup Sound
 - [ ] Dynamically Upload Rom
 - [ ] Compile to WASM for Demo
+- [ ] Write a dump rom function to get state of Chip-8
 
 ## Completed
 
@@ -32,3 +36,6 @@
 - [x] Test and Debug Instructions
   - Using Timendus's chip-8 test suite
   - <https://github.com/Timendus/chip8-test-suite>
+- [x] Implement Timer Setup
+- [x] Test Quirks
+- [x] Connect Keyboard Controls

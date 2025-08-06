@@ -1,4 +1,4 @@
-use crate::INC_INDEX;
+use crate::{INC_INDEX, VF_RESET};
 
 const EMPTY_MEMORY: [u8; 4096] = [0; 4096];
 const EMPTY_REGISTER: [u8; 16] = [0; 16];
@@ -43,11 +43,13 @@ pub struct Chip8Sys {
     pub is_playing_sound: bool,
     // handles if FX55 & FX65 increment I index register
     is_inc_index: bool,
+    // quirk that resets reg[0xF] to 0 when AND, OR, and XOR are set (0x8XY1-3)
+    is_register_f_reset: bool,
 }
 
 impl Chip8Sys {
     // Creates a new Chip8Sys with default settings
-    pub fn new(is_inc_index: bool) -> Chip8Sys {
+    pub fn new(is_inc_index: bool, is_register_f_reset: bool) -> Chip8Sys {
         let mut new_chip_8_sys = Chip8Sys {
             memory: EMPTY_MEMORY,
             register: EMPTY_REGISTER,
@@ -62,6 +64,7 @@ impl Chip8Sys {
             wait_for_key_press: None,
             is_playing_sound: false,
             is_inc_index,
+            is_register_f_reset,
         };
         // load the font in memeory
         for i in FONT_RANGE_MIN..FONT_RANGE_MAX {
@@ -128,9 +131,11 @@ impl Chip8Sys {
         self.wait_for_key_press = Some(register);
         Ok(())
     }
-    pub fn recieve_key_press(&mut self, key_num: u8) {}
     pub fn is_inc_index(&self) -> bool {
         self.is_inc_index
+    }
+    pub fn is_register_f_reset(&self) -> bool {
+        self.is_register_f_reset
     }
     /*
     // This will print the frame_buffer to the console
@@ -154,7 +159,7 @@ mod test {
     #[test]
     // Tests to make sure that we can create a new Chip8Sys with the font in the right place;
     fn create_new_chip_8_sys() {
-        let new_chip_8_sys = Chip8Sys::new(INC_INDEX);
+        let new_chip_8_sys = Chip8Sys::new(INC_INDEX, VF_RESET);
         assert_eq!(
             new_chip_8_sys.memory[(FONT_RANGE_MIN as usize)..(FONT_RANGE_MAX as usize)],
             FONT
