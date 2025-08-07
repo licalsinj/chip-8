@@ -2,8 +2,6 @@ use core::panic;
 use std::fs::File;
 use std::io::Read;
 
-struct KeyPressed(u8, u8);
-
 const EMPTY_MEMORY: [u8; 4096] = [0; 4096];
 const EMPTY_REGISTER: [u8; 16] = [0; 16];
 const EMPTY_STACK: [u16; 16] = [0; 16];

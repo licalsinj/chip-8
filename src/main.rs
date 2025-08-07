@@ -1,8 +1,7 @@
 use chip8::Chip8Sys;
 use minifb::{Key, ScaleMode, Window, WindowOptions};
-use std::{thread, time};
+// use std::{thread, time};
 
-// mod bitwise;
 mod chip8;
 mod decode;
 // mod roms; // used for testing, may not be needed long term

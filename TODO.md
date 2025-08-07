@@ -2,10 +2,10 @@
 
 ## Refactoring
 
-- [ ] Fix the various TODO: left in the code
 - [ ] Convert this to a library instead of a binary
 - [ ] Implement delay and sound timer on their own threads?
 - [ ] Fix Flashing from Clear Screen actions
+- [ ] Have Chip8Sys::run() return Result<(),Err>
 
 ## Emulation Tasks
 
@@ -49,5 +49,6 @@
 - [x] Understand and implement vblank after drawing sprites
   - This is causing me to fail the display wait quirk
   - I think the delay timer not being on its own thread also causes that problem
-  - This is specific to advanced chip-8s that have scrolling. I'm focusing on just the 
-      regular chip-8 and so it's not a problem right now.
+  - This is specific to advanced chip-8s that have scrolling.
+      I'm focusing on just the regular chip-8 and so it's not a problem right now.
+- [x] Resolve TODOs in code

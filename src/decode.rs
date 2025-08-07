@@ -129,7 +129,6 @@ impl Chip8Sys {
                 }
                 4 => {
                     println!("Hit 0x8XY4 - Set reg[X] to reg[X] PLUS reg[Y]");
-                    // TODO: Add test to for addition with overflow
                     let reg_x = self.register[b as usize];
                     let reg_y = self.register[c as usize];
                     let result: u16 = reg_x as u16 + reg_y as u16;
@@ -200,8 +199,6 @@ impl Chip8Sys {
                     // handle overflow for multiplication
                     self.register[0xF] = overflow;
                 }
-                // TODO: handle this error more gracefully
-                // probably by returning a result<T,E>
                 _ => panic!("Passed invalid N for 0x8XYN"),
             },
             0x9 => {
@@ -236,7 +233,6 @@ impl Chip8Sys {
                     0x9E => {
                         // if a value greater than 0xF somehow winds up in here panic
                         if self.register[b as usize] as usize > self.keys.len() {
-                            // TODO: handle this error more gracefully
                             panic!("0xEX9E - register X should be a value less than 0xF");
                         }
                         // self.register[b] has the value of the key
@@ -248,7 +244,6 @@ impl Chip8Sys {
                     0xA1 => {
                         // Skip if key reg[x] is not pressed
                         if self.register[b as usize] as usize > self.keys.len() {
-                            // TODO: handle this error more gracefully
                             panic!("0xEXA1 - register X should be a value less than 0xF");
                         }
                         // self.register[b] has the value of the key
@@ -257,7 +252,6 @@ impl Chip8Sys {
                             self.program_counter += 2;
                         }
                     }
-                    // TODO: Handle this error more gracefully
                     _ => panic!(
                         "NN for 0xE_NN should be either 0x9E or 0xA1. NN Value: 0x{:02X}",
                         Chip8Sys::nn(c, d)
@@ -268,7 +262,6 @@ impl Chip8Sys {
             0xF => {
                 print!("Hit 0xF");
                 match Chip8Sys::nn(c, d) {
-                    // TODO: Handle this error more gracefully
                     0x07 => {
                         println!(" - Load reg[x] with delay timer");
                         self.register[b as usize] = self.delay_timer;
@@ -277,7 +270,6 @@ impl Chip8Sys {
                         println!(" - Wait for key press");
                         match self.wait(b) {
                             Ok(k) => k,
-                            // TODO: Handle this better
                             Err(s) => panic!("{}",s),
                         }
                     }
@@ -336,8 +328,6 @@ impl Chip8Sys {
                     ),
                 }
             }
-            // TODO: Test This
-            // TODO: return better
             _ => panic!("0xN___ provided should be between 0x0 and 0xF."),
         }
     }
@@ -429,18 +419,6 @@ impl Chip8Sys {
         c << 4 | d
     }
 }
-
-// TODO: Remove this. It's a temporary
-// helper function to print a bool vector
-/*
-   fn print_vec(v: &Vec<bool>, vec_name: &str) {
-   print!("{vec_name}: ");
-   for b in v.iter() {
-   print!("{}", (b == &true) as u8);
-   }
-   println!("");
-   }
-// */
 
 #[cfg(test)]
 pub mod test {
@@ -729,6 +707,29 @@ pub mod test {
         );
     }
     #[test]
+    // Tests reg x + reg y sets the overflow; 0x8XY4
+    fn test_add_regx_regy_overflow() {
+        let reg_x = 0;
+        let reg_y = 0xE;
+        let mut chip8 = single_instruction_chip_8(0x8000 | reg_x << 8 | reg_y << 4 | 4);
+        chip8.register[reg_x as usize] = 0xFF;
+        chip8.register[reg_y as usize] = 0x01;
+        chip8.run();
+        assert_eq!(chip8.register[reg_x as usize], 0x00, "Chip-8 0x8XY4 should have set reg x to 0 after adding 1 to 0xFF.");
+        assert_eq!(chip8.register[0xf], 0x1, "Chip-8 0x8XY4 should have set the overflow bit when adding 1 to 0xFF.");
+    }
+    #[test]
+    // Tests that you can use VF as a register and have it overwritten 
+    fn test_add_regx_regy_vf_overwrite() {
+        let reg_x = 0xF;
+        let reg_y = 0xE;
+        let mut chip8 = single_instruction_chip_8(0x8000 | reg_x << 8 | reg_y << 4 | 4);
+        chip8.register[reg_x as usize] = 0xFF;
+        chip8.register[reg_y as usize] = 0x0F;
+        chip8.run();
+        assert_eq!(chip8.register[reg_x as usize], 0x01, "Chip-8 0x8XY4 should have set reg x to 1 due to overwrite after adding 0xF to 0xFF.");
+    }
+    #[test]
     // Tests set reg[x] to reg[x] MINUS reg[y]; 0x8XY5
     fn test_sub_regx_regy() {
         let reg_x = 0xE;
@@ -737,8 +738,6 @@ pub mod test {
         chip8.register[reg_x as usize] = 0x0F;
         chip8.register[reg_y as usize] = 0x04;
         chip8.run();
-        // TODO: Remove
-        // println!("{:02X}-{:02X}={:02X}", 0x0F, 0x04, 0x0F - 0x04);
         assert_eq!(
             chip8.register[reg_x as usize], 0x0B,
             "Chip-8 0x8XY5 should have set reg x to reg x PLUS reg y"
@@ -760,8 +759,6 @@ pub mod test {
         chip8.register[reg_x as usize] = 0x04;
         chip8.register[reg_y as usize] = 0x08;
         chip8.run();
-        // TODO: Remove
-        // println!("{:02X}-{:02X}={:02X}", 0x0F, 0x04, 0x0F - 0x04);
         assert_eq!(
             chip8.register[reg_x as usize],
             // this is -4 in binary if you take the MSB as a sign bit
@@ -773,6 +770,22 @@ pub mod test {
         assert_eq!(
             chip8.register[0xF], 0,
             "Chip-8 register F should not have been set."
+        );
+    }
+    #[test]
+    // Test that reg x MINUS reg y will overwite the reg x if it's set to reg 0xF
+    fn test_sub_regx_regy_overwrite() {
+        let reg_x = 0xF;
+        let reg_y = 0xD;
+        let mut chip8 = single_instruction_chip_8(0x8000 | reg_x << 8 | reg_y << 4 | 5);
+        chip8.register[reg_x as usize] = 0x08;
+        chip8.register[reg_y as usize] = 0x04;
+        chip8.run();
+        // also need to make sure the carry bit was set since this should still be a
+        // positive number (yes that's feels backwards but VF = NOT borrow according to docs)
+        assert_eq!(
+            chip8.register[0xF], 1,
+            "Chip-8 0x8XY5 register F should have been set to 1 and overwritten reg x - reg y value."
         );
     }
     #[test]
@@ -1101,7 +1114,6 @@ pub mod test {
     #[test]
     #[should_panic]
     // Tests that if you sent the incorrect NN value for 0xEXNN Chip8Sys::run() panics
-    // TODO: Update these when you start sending a Result out
     fn test_invalid_0xe_instruction_panics() {
         let mut chip8 = single_instruction_chip_8(0xE000 | 0xFF);
         chip8.run();
@@ -1110,7 +1122,6 @@ pub mod test {
     #[test]
     #[should_panic]
     // Tests that if you pass an out of bounds key address for 0xEX9E Chip8Sys::run() panics
-    // TODO: Update this when you start sending out a Result
     fn test_out_of_bound_key_panics_skip_pressed() {
         let reg_x = 0x1;
         let mut chip8 = single_instruction_chip_8(0xE000 | reg_x << 8 | 0x9E);
@@ -1150,7 +1161,6 @@ pub mod test {
     #[test]
     #[should_panic]
     // Tests that if you pass an out of bounds key address for 0xEXA1 Chip8Sys::run() panics
-    // TODO: Update this when you start sending out a Result
     fn test_out_of_bound_key_panics_skip_not_pressed() {
         let reg_x = 0x1;
         let mut chip8 = single_instruction_chip_8(0xE000 | reg_x << 8 | 0xA1);
@@ -1428,6 +1438,7 @@ pub mod test {
                 val+count);
         }
     }
+
     // NOTE: This is the format I find myself using for these tests
     // with other code sprinkled in
     #[test]
