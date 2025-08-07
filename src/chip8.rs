@@ -1,10 +1,12 @@
+use core::panic;
 use std::fs::File;
 use std::io::Read;
+
+struct KeyPressed(u8, u8);
 
 const EMPTY_MEMORY: [u8; 4096] = [0; 4096];
 const EMPTY_REGISTER: [u8; 16] = [0; 16];
 const EMPTY_STACK: [u16; 16] = [0; 16];
-const PIXEL_COLOR: u32 = 0x0000FF88;
 
 // This is the built in Chip-8 font that Roms expect to access
 const FONT: [u8; 80] = [
@@ -113,54 +115,24 @@ impl Chip8Sys {
 }
 
 impl Chip8Sys {
-    // converts the Chip8Sys frame_buffer to the 1280x640 display I'm using
-    // TODO: Make this actually use the WIDTH and HEIGHT constants I define in main.rs
-    pub fn display_buffer(&self) -> Vec<u32> {
-        // NOTE: u32 is 4x as big as u8
-        // Multiply frame_buffer length by 8 for u32 into u8 conversion
-        // then by 20 for the WIDTH * HEIGHT scaling (which is still a magic number...)
-        // let scaler = (WIDTH * HEIGHT) / (self.frame_buffer.len() * 8 * 20);
-        // println!("scaler: {scaler}");
-        let scaler = 20;
-
-        // Prints debug of the frame buffer to the console
-        // self.debug_print_frame_buffer();
-
-        let mut results = Vec::new();
-        let mut result: Vec<u32> = Vec::new();
-        for (i, pixel) in self.frame_buffer.iter().enumerate() {
-            let mut power_2 = 0b1000_0000;
-            for _ in 0..8 {
-                if pixel & power_2 == power_2 {
-                    result.append(&mut vec![PIXEL_COLOR; scaler]);
-                } else {
-                    result.append(&mut vec![0; scaler]);
-                }
-                // reduce power_2 to check the next bit to the right
-                power_2 /= 2;
-            }
-            // every 8 bytes (64 bits) add scaler number of rows to results
-            // this adds vertical thickness to the screen
-            if (i + 1) % 8 == 0 {
-                results.append(&mut vec![result; scaler].concat());
-                result = Vec::new();
-            }
-        }
-        results
-    }
-    pub fn check_waiting(&self) -> bool {
-        self.wait_for_key_press != None
-    }
-    pub fn get_key_press_reg(&self) -> Result<u8, &str> {
+    pub fn check_waiting(&mut self) -> bool {
         match self.wait_for_key_press {
-            Some(register) => match register {
-                0..=0xF => Ok(register),
-                // NOTE: This should never get hit because we're storing
-                // register with Chip8Sys::wait()
-                _ => panic!("Stored Register is bigger than 0xF (15)"),
+            Some(r) => match r {
+                0..0xF => {
+                    for (n, p) in self.keys.iter().enumerate() {
+                        if *p {
+                            self.register[r as usize] = n as u8;
+                            return false;
+                        }
+                    }
+                }
+                // We should never get here because wait_for_key_press is private and only set
+                // by the 0xFX0A op code.
+                r => panic!("Register {:02X} does not exist. It should be in 0..0xF and only set by 0xFX0A op code.", r)
             },
-            None => Err("Wasn't waiting for key press"),
+            None => return false,
         }
+        true
     }
     pub fn wait(&mut self, register: u8) -> Result<(), &str> {
         if register > 0xF {
