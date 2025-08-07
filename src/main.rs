@@ -1,13 +1,13 @@
 use chip8::Chip8Sys;
 use minifb::{Key, ScaleMode, Window, WindowOptions};
-// use std::{thread, time};
+use rodio::source::{SineWave, Source};
 
 mod chip8;
 mod decode;
 // mod roms; // used for testing, may not be needed long term
 
-const PIXEL_COLOR_ON: u32 = 0x3D521E;
-const PIXEL_COLOR_OFF: u32 = 0x80B039;
+const PIXEL_COLOR_OFF: u32 = 0x3D521E;
+const PIXEL_COLOR_ON: u32 = 0x80B039;
 pub const WIDTH: usize = 640 * 3;
 pub const HEIGHT: usize = 320 * 3;
 // passed when creating all new Chip8Sys
@@ -25,7 +25,8 @@ fn main() {
     // let file_path = "roms/2-ibm-logo.ch8";
     // let file_path = "roms/3-corax+.ch8";
     // let file_path = "roms/4-flags.ch8";
-    let file_path = "roms/5-quirks.ch8";
+    // let file_path = "roms/5-quirks.ch8";
+    let file_path = "roms/7-beep.ch8";
     // When running quirks rom hardcode this memory spot to auto run Chip-8
     // game.memory[0x1FF] = 1;
     // let file_path = "roms/6-keypad.ch8";
@@ -37,6 +38,13 @@ fn main() {
     // Old way
     // game.load_dxyn_rom_adv();
 
+    // Setup Sound
+    let stream_handle =
+        rodio::OutputStreamBuilder::open_default_stream().expect("open default audio stream");
+    let sink = rodio::Sink::connect_new(&stream_handle.mixer());
+    // sink.append(SineWave::new(440.0).repeat_infinite());
+
+    // Setup Window
     let mut window = Window::new(
         "Chip 8 - Press ESC to exit",
         WIDTH,
@@ -57,7 +65,11 @@ fn main() {
         buffer = display_buffer(&mut game);
         window.update_with_buffer(&buffer, WIDTH, HEIGHT).unwrap();
         game.run();
-        // thread::sleep(time::Duration::from_millis(20));
+        if game.is_playing_sound {
+            sink.append(SineWave::new(440.0).repeat_infinite());
+        } else {
+            sink.stop();
+        }
     }
 }
 fn check_key_input(chip8: &mut Chip8Sys, window: &Window) {

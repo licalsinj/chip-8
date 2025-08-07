@@ -1,16 +1,13 @@
 # CHIP-8 TO DO
 
-## Refactoring
+## Emulation Tasks
+
+### Refactoring
 
 - [ ] Convert this to a library instead of a binary
 - [ ] Implement delay and sound timer on their own threads?
 - [ ] Fix Flashing from Clear Screen actions
 - [ ] Have Chip8Sys::run() return Result<(),Err>
-
-## Emulation Tasks
-
-- [ ] Setup Sound
-- [ ] Write a dump rom function to get state of Chip-8
 - [ ] Get Controls to be more responsive
 
   ### Front End Wrapper
@@ -52,3 +49,4 @@
   - This is specific to advanced chip-8s that have scrolling.
       I'm focusing on just the regular chip-8 and so it's not a problem right now.
 - [x] Resolve TODOs in code
+- [x] Setup Sound
