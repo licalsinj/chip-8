@@ -33,16 +33,16 @@ impl Chip8Sys {
         self.program_counter += 2;
         // Prints debug what instruction values I'm sending in
         /*
-        println!("a: {:x}", a);
-        println!("b: {:x}", b);
-        println!("c: {:x}", c);
-        println!("d: {:x}", d);
-        println!("PC inc: {:x}", self.program_counter);
+        // println!("a: {:x}", a);
+        // println!("b: {:x}", b);
+        // println!("c: {:x}", c);
+        // println!("d: {:x}", d);
+        // println!("PC inc: {:x}", self.program_counter);
         // */
         // Implement the Instructions for the Chip-8
         match a {
             0x0 => {
-                println!("Hit 0x0");
+                // println!("Hit 0x0");
                 match instruction {
                     // Clear display
                     0x00E0 => self.frame_buffer = [0x00; 256],
@@ -58,40 +58,40 @@ impl Chip8Sys {
                 }
             }
             0x1 => {
-                println!("Hit 0x1 - Jump");
+                // println!("Hit 0x1 - Jump");
                 self.program_counter = Chip8Sys::nnn(b, c, d);
             }
             0x2 => {
-                println!("Hit 0x2 - Call addr");
+                // println!("Hit 0x2 - Call addr");
                 self.stack_pointer += 1;
                 self.stack[self.stack_pointer as usize] = self.program_counter;
                 self.program_counter = Chip8Sys::nnn(b, c, d);
             }
             0x3 => {
-                println!("Hit 0x3 - Skip if vX is NN");
+                // println!("Hit 0x3 - Skip if vX is NN");
                 if self.register[b as usize] == Chip8Sys::nn(c, d) {
                     self.program_counter += 2;
                 }
             }
             0x4 => {
-                println!("Hit 0x4 - Skip if vX is not equal to NN");
+                // println!("Hit 0x4 - Skip if vX is not equal to NN");
                 if self.register[b as usize] != Chip8Sys::nn(c, d) {
                     self.program_counter += 2;
                 }
             }
             0x5 => {
-                println!("Hit 0x5 - Skip if reg[X] == reg[Y]");
+                // println!("Hit 0x5 - Skip if reg[X] == reg[Y]");
                 if self.register[b as usize] == self.register[c as usize] {
                     self.program_counter += 2;
                 }
             }
             0x6 => {
-                println!("Hit 0x6 - Load VX with NN");
+                // println!("Hit 0x6 - Load VX with NN");
                 self.register[b as usize] = Chip8Sys::nn(c, d);
-                println!("register[{:02X}] = {:02X}", b, self.register[b as usize]);
+                // println!("register[{:02X}] = {:02X}", b, self.register[b as usize]);
             }
             0x7 => {
-                println!("Hit 0x7 - Add NN to reg[X]");
+                // println!("Hit 0x7 - Add NN to reg[X]");
                 let nn = Chip8Sys::nn(c, d);
                 let reg_val = self.register[b as usize];
                 let result: u16 = reg_val as u16 + nn as u16;
@@ -100,11 +100,11 @@ impl Chip8Sys {
             }
             0x8 => match d {
                 0 => {
-                    println!("Hit 0x8XY0 - Set reg[X] to reg[Y]");
+                    // println!("Hit 0x8XY0 - Set reg[X] to reg[Y]");
                     self.register[b as usize] = self.register[c as usize];
                 }
                 1 => {
-                    println!("Hit 0x8XY1 - Set reg[X] to reg[X] OR reg[Y]");
+                    // println!("Hit 0x8XY1 - Set reg[X] to reg[X] OR reg[Y]");
                     self.register[b as usize] =
                         self.register[b as usize] | self.register[c as usize];
                     if self.is_register_f_reset() {
@@ -112,7 +112,7 @@ impl Chip8Sys {
                     }
                 }
                 2 => {
-                    println!("Hit 0x8XY2 - Set reg[X] to reg[X] AND reg[Y]");
+                    // println!("Hit 0x8XY2 - Set reg[X] to reg[X] AND reg[Y]");
                     self.register[b as usize] =
                         self.register[b as usize] & self.register[c as usize];
                     if self.is_register_f_reset() {
@@ -120,7 +120,7 @@ impl Chip8Sys {
                     }
                 }
                 3 => {
-                    println!("Hit 0x8XY3 - Set reg[X] to reg[X] XOR reg[Y]");
+                    // println!("Hit 0x8XY3 - Set reg[X] to reg[X] XOR reg[Y]");
                     self.register[b as usize] =
                         self.register[b as usize] ^ self.register[c as usize];
                     if self.is_register_f_reset() {
@@ -128,7 +128,7 @@ impl Chip8Sys {
                     }
                 }
                 4 => {
-                    println!("Hit 0x8XY4 - Set reg[X] to reg[X] PLUS reg[Y]");
+                    // println!("Hit 0x8XY4 - Set reg[X] to reg[X] PLUS reg[Y]");
                     let reg_x = self.register[b as usize];
                     let reg_y = self.register[c as usize];
                     let result: u16 = reg_x as u16 + reg_y as u16;
@@ -136,10 +136,10 @@ impl Chip8Sys {
                     self.register[b as usize] = (result & 0xFF) as u8;
                     // set the carry bit 
                     self.register[0xF] = ((result & 0b1_0000_0000) >> 8) as u8;
-                    println!("V{:X}: {:02X}, V{:X}: {:02X}, res: {:08b}, VF: {:02X}",b, self.register[b as usize],c, self.register[c as usize],result,self.register[0xF]);
+                    // println!("V{:X}: {:02X}, V{:X}: {:02X}, res: {:08b}, VF: {:02X}",b, self.register[b as usize],c, self.register[c as usize],result,self.register[0xF]);
                 }
                 5 => {
-                    println!("Hit 0x8XY5 - Set reg[X] to reg[X] MINUS reg[Y]");
+                    // println!("Hit 0x8XY5 - Set reg[X] to reg[X] MINUS reg[Y]");
                     // VF should = NOT borrow
                     // figure out if we need to deal with an overflow case
                     if self.register[b as usize] < self.register[c as usize] {
@@ -156,7 +156,7 @@ impl Chip8Sys {
                     }
                 }
                 6 => {
-                    println!("Hit 0x8X_6 - Set reg[X] to reg[X] / 2 (SHR)");
+                    // println!("Hit 0x8X_6 - Set reg[X] to reg[X] / 2 (SHR)");
                     let overflow ;
                     if self.is_mod_vx_in_place() {
                         overflow  = self.register[b as usize] & 0x1;
@@ -169,7 +169,7 @@ impl Chip8Sys {
                     self.register[0xF] = overflow;
                 }
                 7 => {
-                    println!("Hit 0x8XY7 - Set reg[X] to reg[Y] MINUS reg[X]");
+                    // println!("Hit 0x8XY7 - Set reg[X] to reg[Y] MINUS reg[X]");
                     // VF should = NOT borrow
                     // figure out if we need to deal with an overflow case
                     if self.register[b as usize] > self.register[c as usize] {
@@ -187,7 +187,7 @@ impl Chip8Sys {
                     }
                 }
                 0xE => {
-                    println!("Hit 0x8X_E - Set reg[X] to reg[Y] * 2 (SHL)");
+                    // println!("Hit 0x8X_E - Set reg[X] to reg[Y] * 2 (SHL)");
                     let overflow ;
                     if self.is_mod_vx_in_place() {
                         overflow = (self.register[b as usize] & 0b1000) >> 3;
@@ -202,32 +202,32 @@ impl Chip8Sys {
                 _ => panic!("Passed invalid N for 0x8XYN"),
             },
             0x9 => {
-                println!("Hit 0x9 - Skip if X != Y");
+                // println!("Hit 0x9 - Skip if X != Y");
                 // if register b != register c then increment pc by 2
                 if self.register[b as usize] != self.register[c as usize] {
                     self.program_counter += 2;
                 }
             }
             0xA => {
-                println!("Hit 0xA - Load register I");
+                // println!("Hit 0xA - Load register I");
                 self.register_i = Chip8Sys::nnn(b, c, d);
-                println!("reg I = {:02X}", self.register_i);
+                // println!("reg I = {:02X}", self.register_i);
             }
             0xB => {
                 // 0xBNNN
                 self.program_counter = self.register[0] as u16 + Chip8Sys::nnn(b, c, d);
             }
             0xC => {
-                println!("Hit 0xCXNN - Set Vx to Random bite then AND with NN");
+                // println!("Hit 0xCXNN - Set Vx to Random bite then AND with NN");
                 let mut rng = rand::rng();
                 self.register[b as usize] = rng.random_range(0x00..=0xFF) & Chip8Sys::nn(c, d);
             }
             0xD => {
-                println!("Hit 0xD - Draw");
+                // println!("Hit 0xD - Draw");
                 self.draw(b, c, d);
             }
             0xE => {
-                println!("Hit 0xE - key press");
+                // println!("Hit 0xE - key press");
                 match Chip8Sys::nn(c, d) {
                     // Skip if Key reg[x] is pressed
                     0x9E => {
@@ -263,37 +263,37 @@ impl Chip8Sys {
                 print!("Hit 0xF");
                 match Chip8Sys::nn(c, d) {
                     0x07 => {
-                        println!(" - Load reg[x] with delay timer");
+                        // println!(" - Load reg[x] with delay timer");
                         self.register[b as usize] = self.delay_timer;
                     }
                     0x0A => {
-                        println!(" - Wait for key press");
+                        // println!(" - Wait for key press");
                         match self.wait(b) {
                             Ok(k) => k,
                             Err(s) => panic!("{}",s),
                         }
                     }
                     0x15 => {
-                        println!(" - Set Delay Timer with Reg[x]'s value");
+                        // // println!(" - Set Delay Timer with Reg[x]'s value");
                         self.delay_timer = self.register[b as usize];
 
                     }
                     0x18 => {
-                        println!(" - Set Sound Timer with Reg[x]'s value");
+                        // println!(" - Set Sound Timer with Reg[x]'s value");
                         self.sound_timer = self.register[b as usize];
                         self.is_playing_sound = true;
                     }
                     0x1E => {
-                        println!(" - Set I to I + Reg[x]");
+                        // println!(" - Set I to I + Reg[x]");
                         self.register_i = (self.register_i + self.register[b as usize] as u16) & 0xFFFF;
 
                     }
                     0x29 => {
-                        println!(" - Set I to location of sprite for digit Reg[x]");
+                        // println!(" - Set I to location of sprite for digit Reg[x]");
                         self.register_i = 0x050 + b as u16 * 5;
                     }
                     0x33 => {
-                        println!(" - store the 100s, 10s, and 1s place of reg[x] into memory location I, I+1, and I+2 respectively");
+                        // println!(" - store the 100s, 10s, and 1s place of reg[x] into memory location I, I+1, and I+2 respectively");
                         let value = self.register[b as usize];
                         let places = (
                             (value as f32/100.).floor() as u8,
@@ -305,7 +305,7 @@ impl Chip8Sys {
                         self.memory[self.register_i as usize + 2] = places.2 - places.1 * 10; 
                     }
                     0x55 => {
-                        println!(" - store registers reg[0] to reg[x] to memory starting at the location stored in register I");
+                        // println!(" - store registers reg[0] to reg[x] to memory starting at the location stored in register I");
                         for count in 0..=b {
                             self.memory[(self.register_i + count as u16) as usize] = self.register[count as usize];
                         }
@@ -314,7 +314,7 @@ impl Chip8Sys {
                         }
                     }
                     0x65 => {
-                        println!(" - read register reg[0] to reg[x] out of memory starting at the location stored in register I");
+                        // println!(" - read register reg[0] to reg[x] out of memory starting at the location stored in register I");
                         for count in 0..=b {
                             self.register[count as usize] = self.memory[(self.register_i + count as u16) as usize];
                         }
@@ -333,7 +333,7 @@ impl Chip8Sys {
     }
     // Helper function to handle the Draw command logic 0xDXYN
     fn draw(&mut self, x: u8, y: u8, n: u8) {
-        println!("Drawing {:02X} {:02X} {:02X}", x, y, n);
+        // println!("Drawing {:02X} {:02X} {:02X}", x, y, n);
         // get the x and y location out of the x and y registers
         let x_loc;
         let mut y_loc;
@@ -344,7 +344,7 @@ impl Chip8Sys {
         //    x_loc = self.register[x as usize] & 0b0111_1111;
         //    y_loc = self.register[y as usize] & 0b0011_1111;
         // }
-        println!("at {}, {}", x_loc, y_loc);
+        // println!("at {}, {}", x_loc, y_loc);
         // pull the sprite's location in memory out using register I as the starting location
         let mut sprite_location = self.register_i;
         for _ in 0..n {
@@ -369,24 +369,24 @@ impl Chip8Sys {
             self.frame_buffer[fb_chunk_index as usize] ^= sprite_pxs >> offset;
             // Update the flag if fb was 1 and became 0
             let flag_for_index = !(self.frame_buffer[fb_chunk_index as usize] & fb_chunk_index_original) & fb_chunk_index_original;
-            println!("flag_for_index: ");
-            println!("original: {:08b}", fb_chunk_index_original);
-            println!("new     : {:08b}", self.frame_buffer[fb_chunk_index as usize]);
-            println!("flag    : {:08b}", flag_for_index);
+            // println!("flag_for_index: ");
+            // println!("original: {:08b}", fb_chunk_index_original);
+            // println!("new     : {:08b}", self.frame_buffer[fb_chunk_index as usize]);
+            // println!("flag    : {:08b}", flag_for_index);
             // default to false so we don't mess with the flag during clipping
             let mut flag_for_next = 0; 
             // Only do this if we're wrapping or we're clipping but not at the edge
-            println!("clipping {}, is_edge_x {}",!self.is_wrap_draw(), !is_edge_x);
+            // println!("clipping {}, is_edge_x {}",!self.is_wrap_draw(), !is_edge_x);
             if self.is_wrap_draw() | (!self.is_wrap_draw() & !is_edge_x) {
                 self.frame_buffer[fb_chunk_index_next as usize] ^= (((sprite_pxs as u16) << (8 - offset)) & 0xFF) as u8;
                 flag_for_next = !(self.frame_buffer[fb_chunk_index_next as usize] & fb_chunk_index_next_original) & fb_chunk_index_next_original;
             }
-            println!("flag_for_next: ");
-            println!("original: {:08b}", fb_chunk_index_next_original);
-            println!("new     : {:08b}", self.frame_buffer[fb_chunk_index_next as usize]);
-            println!("flag    : {:08b}", flag_for_next);
+            // println!("flag_for_next: ");
+            // println!("original: {:08b}", fb_chunk_index_next_original);
+            // println!("new     : {:08b}", self.frame_buffer[fb_chunk_index_next as usize]);
+            // println!("flag    : {:08b}", flag_for_next);
             if (flag_for_index != 0) | (flag_for_next != 0) {
-                println!("VF SET: index: {}, next: {}", flag_for_index, flag_for_next);
+                // println!("VF SET: index: {}, next: {}", flag_for_index, flag_for_next);
                 self.register[0xF] = 1;
             }
             // increment Y
@@ -404,7 +404,7 @@ impl Chip8Sys {
         }
         /*
            for byte in self.frame_buffer.iter() {
-           println!("{:08b}",byte);
+           // println!("{:08b}",byte);
            }
         // */
     }
@@ -492,7 +492,7 @@ pub mod test {
         // the pc should be stored on the stack at that location
         // since this is a brand new program the pc starts at 0x200
         // and pc is incremented by 2 during fetch section so 0x202
-        println!("{:02X?}", chip8.stack);
+        // println!("{:02X?}", chip8.stack);
         assert!(
             chip8.stack[chip8.stack_pointer as usize] == 0x202,
             "Chip-8 stack should have stored program counter."
@@ -581,7 +581,7 @@ pub mod test {
         let mut chip8 = single_instruction_chip_8(0x4000 | reg_x << 8 | reg_y << 4);
         chip8.register[reg_x as usize] = reg_val;
         chip8.register[reg_y as usize] = !reg_val;
-        println!("{:02X} != {:02X}", reg_val, !reg_val);
+        // println!("{:02X} != {:02X}", reg_val, !reg_val);
         chip8.run();
         // program counter should NOT be incremented since reg[x] != reg[y]
         // program counter has already been updated by 2 from the fetch section
@@ -606,7 +606,7 @@ pub mod test {
         // add 0x0A to Register A
         let mut chip8 = single_instruction_chip_8(0x7A0B);
         // directly access the register for testing purposes
-        println!("sum: {:02X}", 0x04 + 0x0B);
+        // println!("sum: {:02X}", 0x04 + 0x0B);
         chip8.register[0xA] = 0x04;
         chip8.run();
         // 0x0B + 0x04 = 0x10

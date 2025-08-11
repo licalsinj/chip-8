@@ -1,10 +1,8 @@
-use chip8::Chip8Sys;
+#![crate_name = "chip8sys"]
+
+use chip8sys::chip8::Chip8Sys;
 use minifb::{Key, ScaleMode, Window, WindowOptions};
 use rodio::source::{SineWave, Source};
-
-mod chip8;
-mod decode;
-// mod roms; // used for testing, may not be needed long term
 
 const PIXEL_COLOR_OFF: u32 = 0x3D521E;
 const PIXEL_COLOR_ON: u32 = 0x80B039;

@@ -194,7 +194,7 @@ impl Chip8Sys {
             );
             // */
             if i + 0x200 > self.memory.len() - 1 {
-                println!("Rom to long reading stopped");
+                // println!("Rom to long reading stopped");
                 break;
             }
             self.memory[0x200 + i] = byte.to_owned();
