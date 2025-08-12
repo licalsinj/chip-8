@@ -1,4 +1,4 @@
-#![crate_name = "chip8sys"]
+#![crate_name = "chip8gui"]
 
 use chip8sys::chip8::Chip8Sys;
 use minifb::{Key, ScaleMode, Window, WindowOptions};

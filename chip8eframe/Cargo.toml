@@ -1,0 +1,11 @@
+[package]
+name = "chip8eframe"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+
+[[bin]]
+name = "chip8eframe"
+path = "src/main.rs"
+

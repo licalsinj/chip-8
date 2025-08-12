@@ -8,6 +8,7 @@ chip8sys = { path = "../chip8sys" }
 minifb = "0.28"
 rodio = "0.21.1"
 
-[[bin]]
-name = "chip8sys"
-path = "src/main.rs"
+[lib]
+name = "chip8gui"
+path = "src/lib.rs"
+
