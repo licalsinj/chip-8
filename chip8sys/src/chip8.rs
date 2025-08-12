@@ -1,4 +1,5 @@
 use core::panic;
+use std::env;
 use std::fs::File;
 use std::io::Read;
 
@@ -126,7 +127,10 @@ impl Chip8Sys {
                 }
                 // We should never get here because wait_for_key_press is private and only set
                 // by the 0xFX0A op code.
-                r => panic!("Register {:02X} does not exist. It should be in 0..0xF and only set by 0xFX0A op code.", r)
+                r => panic!(
+                    "Register {:02X} does not exist. It should be in 0..0xF and only set by 0xFX0A op code.",
+                    r
+                ),
             },
             None => return false,
         }
@@ -165,6 +169,8 @@ impl Chip8Sys {
     }
     // */
     pub fn load_rom(&mut self, file_path: String) -> &mut Self {
+        let path = env::current_dir().unwrap();
+        println!("Path is: {}", path.display());
         let mut file = File::open(file_path).expect("should have been able to open the file");
         let mut rom = [0; 0x1000];
         file.read(&mut rom[..])

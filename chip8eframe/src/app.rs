@@ -1,51 +1,43 @@
-/// We derive Deserialize/Serialize so we can persist app state on shutdown.
-#[derive(serde::Deserialize, serde::Serialize)]
-#[serde(default)] // if we add new fields, give them default values when deserializing old state
-
-pub struct TemplateApp {
+use chip8sys::chip8::Chip8Sys;
+// if we add new fields, give them default values when deserializing old state
+pub struct Chip8App {
     // Example stuff:
     label: String,
-
-    #[serde(skip)] // This how you opt-out of serialization of a field
     value: f32,
+
+    // Actual Chip 8 Implementation
+    // #[serde(skip)] // This how you opt-out of serialization of a field
+    chip8: Chip8Sys,
 }
 
-impl Default for TemplateApp {
+impl Default for Chip8App {
     fn default() -> Self {
         Self {
             // Example stuff:
             label: "Hello World!".to_owned(),
             value: 2.7,
+            chip8: Chip8Sys::new_chip_8(),
         }
     }
 }
 
-impl TemplateApp {
+impl Chip8App {
     /// Called once before the first frame.
-    pub fn new(cc: &eframe::CreationContext<'_>) -> Self {
+    pub fn new(_cc: &eframe::CreationContext<'_>) -> Self {
         // This is also where you can customize the look and feel of egui using
         // `cc.egui_ctx.set_visuals` and `cc.egui_ctx.set_fonts`.
-
-        // Load previous app state (if any).
-        // Note that you must enable the `persistence` feature for this to work.
-        if let Some(storage) = cc.storage {
-            eframe::get_value(storage, eframe::APP_KEY).unwrap_or_default()
-        } else {
-            Default::default()
-        }
+        let mut result: Chip8App = Default::default();
+        result.chip8.load_rom("roms/3-corax+.ch8".to_string());
+        result
     }
 }
 
-impl eframe::App for TemplateApp {
-    /// Called by the framework to save state before shutdown.
-    fn save(&mut self, storage: &mut dyn eframe::Storage) {
-        eframe::set_value(storage, eframe::APP_KEY, self);
-    }
-
+impl eframe::App for Chip8App {
     /// Called each time the UI needs repainting, which may be many times per second.
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         // Put your widgets into a `SidePanel`, `TopBottomPanel`, `CentralPanel`, `Window` or `Area`.
         // For inspiration and more examples, go to https://emilk.github.io/egui
+        self.chip8.run();
 
         egui::TopBottomPanel::top("top_panel").show(ctx, |ui| {
             // The top panel is often a good place for a menu bar:
@@ -78,6 +70,17 @@ impl eframe::App for TemplateApp {
             ui.add(egui::Slider::new(&mut self.value, 0.0..=10.0).text("value"));
             if ui.button("Increment").clicked() {
                 self.value += 1.0;
+            }
+
+            ui.separator();
+            ui.horizontal(|ui| {
+                ui.label(format!("Program Counter: {}", &self.chip8.program_counter));
+            });
+            ui.horizontal(|ui| {
+                ui.label(format!("Register I: {}", &self.chip8.register_i));
+            });
+            for n in 0..0xF {
+                ui.label(format!("Register {}: {}", n, &self.chip8.register[n]));
             }
 
             ui.separator();

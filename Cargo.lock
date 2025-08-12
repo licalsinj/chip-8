@@ -607,6 +607,7 @@ dependencies = [
 name = "chip8eframe"
 version = "0.1.0"
 dependencies = [
+ "chip8sys",
  "eframe",
  "egui",
  "env_logger",
@@ -621,6 +622,7 @@ name = "chip8sys"
 version = "0.1.0"
 dependencies = [
  "rand",
+ "serde",
 ]
 
 [[package]]
