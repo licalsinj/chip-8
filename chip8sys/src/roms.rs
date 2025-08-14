@@ -13,14 +13,14 @@ impl Chip8Sys {
 
         // load register V1 with y position
         self.memory[0x204] = 0x61;
-        self.memory[0x205] = 0x05;
+        self.memory[0x205] = 0x08;
         // load register I with sprite location
         self.memory[0x206] = 0xA0;
         self.memory[0x207] = 0x9B; // F Sprite is at 0x09B
 
         // draw sprite @I in position V0 and V1
         self.memory[0x208] = 0xD1;
-        self.memory[0x209] = 0x15; // the default sprites are 5 px tall
+        self.memory[0x209] = 0x05; // the default sprites are 5 px tall
         self
     }
     // */
@@ -44,8 +44,8 @@ impl Chip8Sys {
         // draw sprite at I at position V0 and V1
         self.memory[0x208] = 0xD0;
         self.memory[0x209] = 0x15; // the default sprites are 5 px tall
-                                   // */
-                                   // update reg[0]'s location to move 10 X
+        // */
+        // update reg[0]'s location to move 10 X
         self.memory[0x20A] = 0x70;
         self.memory[0x20B] = 0x0A;
         // draw F again at new I location

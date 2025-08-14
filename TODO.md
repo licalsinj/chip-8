@@ -2,25 +2,34 @@
 
 ## Emulation Tasks
 
-### Refactoring
+### Library Refactoring
 
 Ordered by how likely they are to be done (or be able to be fixed).
 
+- [x] Convert this to a library instead of a binary
 - [ ] Have Chip8Sys::run() return Result<(),Err>
-- [ ] Convert this to a library instead of a binary
 - [ ] Implement delay and sound timer on their own threads?
 - [ ] Fix Flashing from Clear Screen actions
+  - Looking at the code this seems to use the delay timer to keep flashing down
+  - And my delay timer is off so it's constantly redrawing.
 - [ ] Get Controls to be more responsive
 
-  ### Front End Wrapper
+  ### egui Presenter
 
-A holding spot for things I want to handle in the front end wrapper long term.
-
+- [x] Get Screen to Appear
+- [ ] Display Inside Registers & such
+- [ ] Get sound to work
+- [ ] Get Button Input to work
+- [ ] Run, Pause, Step Buttons
+- [ ] Configure Quirks
 - [ ] Dynamically Upload Rom
+  - [ ] Roms from Memory
+  - [ ] Roms from User
 - [ ] Compile to WASM for Demo
 
 #### Stretch Goals
 
+- [ ] Get Screen to Dynamically Scale
 - [ ] Make Sound Frequency Configurable
 - [ ] Make Pixel Color Configurable
 - [ ] Display Rom and register values while playing

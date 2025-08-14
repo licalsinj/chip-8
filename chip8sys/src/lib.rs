@@ -5,4 +5,4 @@ extern crate rand;
 
 pub mod chip8;
 mod decode;
-// mod roms; // used for testing, may not be needed long term
+mod roms; // used for testing, may not be needed long term
