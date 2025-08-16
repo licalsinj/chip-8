@@ -1,4 +1,5 @@
 use chip8sys::chip8::Chip8Sys;
+use chip8sys::chip8error::Chip8Error;
 use egui::Color32;
 
 // if we add new fields, give them default values when deserializing old state
@@ -45,8 +46,24 @@ impl eframe::App for Chip8App {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         // Put your widgets into a `SidePanel`, `TopBottomPanel`, `CentralPanel`, `Window` or `Area`.
         // For inspiration and more examples, go to https://emilk.github.io/egui
-        // TODO: Handle errors 
-        let _ = self.chip8.run();
+        // TODO: Not sure how I want to handle all these yet...
+        match self.chip8.run() {
+            Ok(_) => (),
+            Err(e) => match e {
+                // if the N of 0xN___ is invalid it will return this and the N provided
+                Chip8Error::InvalidFirstByte(_) => (),
+                // If the X register should be <= 0xF
+                Chip8Error::InvalidRegisterX(_) => (),
+                // if the N in 0x8XYN is invalid it will return this and the N provided
+                Chip8Error::Invalid0x8XYN(_) => (),
+                // if the N in 0x8XYN is invalid it will return this and the N provided
+                Chip8Error::Invalid0xENNN(_, _) => (),
+                // if the N in 0x8XYN is invalid it will return this and the N provided
+                Chip8Error::Invalid0xFNNN(_, _) => (),
+                // If the register we're waiting for is somehow > 0xF
+                Chip8Error::InvalidWaitRegister(_) => (),
+            },
+        }
 
         egui::TopBottomPanel::top("top_panel").show(ctx, |ui| {
             // The top panel is often a good place for a menu bar:
