@@ -1,15 +1,15 @@
 use crate::chip8::Chip8Sys;
+use crate::chip8error::Chip8Error;
 use rand::prelude::*;
-
 
 impl Chip8Sys {
     // This will run the next command in program_counter is pointing to in Chip8Sys.memory
-    pub fn run(&mut self) {
+    pub fn run(&mut self) -> Result<(), Chip8Error> {
         // check to see if we're waiting for a key press
         if self.check_waiting() {
-            return;
+            return Ok(());
         }
-        // Delay timer 
+        // Delay timer
         if self.delay_timer > 0 {
             self.delay_timer -= 1;
         }
@@ -54,7 +54,7 @@ impl Chip8Sys {
                         self.stack_pointer -= 1;
                     }
                     // SYS addr
-                    _ =>  (), // self.program_counter = Chip8Sys::nnn(b, c, d),
+                    _ => (), // self.program_counter = Chip8Sys::nnn(b, c, d),
                 }
             }
             0x1 => {
@@ -134,7 +134,7 @@ impl Chip8Sys {
                     let result: u16 = reg_x as u16 + reg_y as u16;
                     // result before masking and saving it.
                     self.register[b as usize] = (result & 0xFF) as u8;
-                    // set the carry bit 
+                    // set the carry bit
                     self.register[0xF] = ((result & 0b1_0000_0000) >> 8) as u8;
                     // println!("V{:X}: {:02X}, V{:X}: {:02X}, res: {:08b}, VF: {:02X}",b, self.register[b as usize],c, self.register[c as usize],result,self.register[0xF]);
                 }
@@ -150,22 +150,23 @@ impl Chip8Sys {
                         self.register[0xF] = 0;
                     } else {
                         // otherwise we can just do it normal and set VF
-                        let overflow: i16 = self.register[b as usize] as i16 - self.register[c as usize] as i16;
+                        let overflow: i16 =
+                            self.register[b as usize] as i16 - self.register[c as usize] as i16;
                         self.register[b as usize] = (overflow & 0xFF) as u8;
                         self.register[0xF] = 1;
                     }
                 }
                 6 => {
                     // println!("Hit 0x8X_6 - Set reg[X] to reg[X] / 2 (SHR)");
-                    let overflow ;
+                    let overflow;
                     if self.is_mod_vx_in_place() {
-                        overflow  = self.register[b as usize] & 0x1;
+                        overflow = self.register[b as usize] & 0x1;
                         self.register[b as usize] >>= 1;
                     } else {
-                        overflow  = self.register[c as usize] & 0x1;
+                        overflow = self.register[c as usize] & 0x1;
                         self.register[b as usize] = self.register[c as usize] >> 1;
                     }
-                    // handle the overflow when shifting 
+                    // handle the overflow when shifting
                     self.register[0xF] = overflow;
                 }
                 7 => {
@@ -180,7 +181,7 @@ impl Chip8Sys {
                         self.register[0xF] = 0;
                     } else {
                         // otherwise we can just do it normal and set VF
-                        let overflow: i16 = 
+                        let overflow: i16 =
                             self.register[c as usize] as i16 - self.register[b as usize] as i16;
                         self.register[b as usize] = (overflow & 0xFF) as u8;
                         self.register[0xF] = 1;
@@ -188,7 +189,7 @@ impl Chip8Sys {
                 }
                 0xE => {
                     // println!("Hit 0x8X_E - Set reg[X] to reg[Y] * 2 (SHL)");
-                    let overflow ;
+                    let overflow;
                     if self.is_mod_vx_in_place() {
                         overflow = (self.register[b as usize] & 0b1000) >> 3;
                         self.register[b as usize] <<= 1;
@@ -199,7 +200,7 @@ impl Chip8Sys {
                     // handle overflow for multiplication
                     self.register[0xF] = overflow;
                 }
-                _ => panic!("Passed invalid N for 0x8XYN"),
+                _ => return Err(Chip8Error::Invalid0x8XYN(d)),
             },
             0x9 => {
                 // println!("Hit 0x9 - Skip if X != Y");
@@ -231,9 +232,10 @@ impl Chip8Sys {
                 match Chip8Sys::nn(c, d) {
                     // Skip if Key reg[x] is pressed
                     0x9E => {
-                        // if a value greater than 0xF somehow winds up in here panic
+                        // if a value greater than 0xF somehow winds up in here return error
                         if self.register[b as usize] as usize > self.keys.len() {
-                            panic!("0xEX9E - register X should be a value less than 0xF");
+                            // 0xEX9E - register X should be a value less than 0xF"
+                            return Err(Chip8Error::InvalidRegisterX(b));
                         }
                         // self.register[b] has the value of the key
                         // self.keys stores if the key is pressed
@@ -244,7 +246,8 @@ impl Chip8Sys {
                     0xA1 => {
                         // Skip if key reg[x] is not pressed
                         if self.register[b as usize] as usize > self.keys.len() {
-                            panic!("0xEXA1 - register X should be a value less than 0xF");
+                            // 0xEXA1 - register X should be a value less than 0xF
+                            return Err(Chip8Error::InvalidRegisterX(b));
                         }
                         // self.register[b] has the value of the key
                         // self.keys stores if the key is pressed
@@ -252,10 +255,7 @@ impl Chip8Sys {
                             self.program_counter += 2;
                         }
                     }
-                    _ => panic!(
-                        "NN for 0xE_NN should be either 0x9E or 0xA1. NN Value: 0x{:02X}",
-                        Chip8Sys::nn(c, d)
-                    ),
+                    _ => return Err(Chip8Error::Invalid0xENNN(c, d)),
                 }
             }
 
@@ -270,13 +270,12 @@ impl Chip8Sys {
                         // println!(" - Wait for key press");
                         match self.wait(b) {
                             Ok(k) => k,
-                            Err(s) => panic!("{}",s),
+                            Err(e) => return Err(e),
                         }
                     }
                     0x15 => {
                         // // println!(" - Set Delay Timer with Reg[x]'s value");
                         self.delay_timer = self.register[b as usize];
-
                     }
                     0x18 => {
                         // println!(" - Set Sound Timer with Reg[x]'s value");
@@ -285,8 +284,8 @@ impl Chip8Sys {
                     }
                     0x1E => {
                         // println!(" - Set I to I + Reg[x]");
-                        self.register_i = (self.register_i + self.register[b as usize] as u16) & 0xFFFF;
-
+                        self.register_i =
+                            (self.register_i + self.register[b as usize] as u16) & 0xFFFF;
                     }
                     0x29 => {
                         // println!(" - Set I to location of sprite for digit Reg[x]");
@@ -296,18 +295,19 @@ impl Chip8Sys {
                         // println!(" - store the 100s, 10s, and 1s place of reg[x] into memory location I, I+1, and I+2 respectively");
                         let value = self.register[b as usize];
                         let places = (
-                            (value as f32/100.).floor() as u8,
-                            (value as f32/10.).floor() as u8,
-                            (value as f32/1.).floor() as u8,
+                            (value as f32 / 100.).floor() as u8,
+                            (value as f32 / 10.).floor() as u8,
+                            (value as f32 / 1.).floor() as u8,
                         );
                         self.memory[self.register_i as usize] = places.0;
                         self.memory[self.register_i as usize + 1] = places.1 - places.0 * 10;
-                        self.memory[self.register_i as usize + 2] = places.2 - places.1 * 10; 
+                        self.memory[self.register_i as usize + 2] = places.2 - places.1 * 10;
                     }
                     0x55 => {
                         // println!(" - store registers reg[0] to reg[x] to memory starting at the location stored in register I");
                         for count in 0..=b {
-                            self.memory[(self.register_i + count as u16) as usize] = self.register[count as usize];
+                            self.memory[(self.register_i + count as u16) as usize] =
+                                self.register[count as usize];
                         }
                         if self.is_inc_index() {
                             self.register_i = self.register_i + b as u16 + 1;
@@ -316,20 +316,19 @@ impl Chip8Sys {
                     0x65 => {
                         // println!(" - read register reg[0] to reg[x] out of memory starting at the location stored in register I");
                         for count in 0..=b {
-                            self.register[count as usize] = self.memory[(self.register_i + count as u16) as usize];
+                            self.register[count as usize] =
+                                self.memory[(self.register_i + count as u16) as usize];
                         }
                         if self.is_inc_index() {
                             self.register_i = self.register_i + b as u16 + 1;
                         }
                     }
-                    _ => panic!(
-                        "NN for 0xF_NN should be 0x07, 0x0A, 0x15, 0x18, 0x1E, 0x29, 0x33, 0x55, or 0x65. NN Value: 0x{:02X}",
-                        Chip8Sys::nn(c, d)
-                    ),
+                    _ => return Err(Chip8Error::Invalid0xFNNN(c, d)),
                 }
             }
-            _ => panic!("0xN___ provided should be between 0x0 and 0xF."),
+            _ => return Err(Chip8Error::InvalidFirstByte(a)),
         }
+        Ok(())
     }
     // Helper function to handle the Draw command logic 0xDXYN
     fn draw(&mut self, x: u8, y: u8, n: u8) {
@@ -351,7 +350,7 @@ impl Chip8Sys {
             // get the sprite's pixels from memory
             let sprite_pxs = self.memory[sprite_location as usize];
             // calculate the u8 (chunk) of the frame_buffer we'll be updating
-            let fb_chunk_index = (y_loc * 8) + (x_loc as f32/8.).floor() as u8;
+            let fb_chunk_index = (y_loc * 8) + (x_loc as f32 / 8.).floor() as u8;
             // calculate the overflow (next) chunk of the frame frame_buffer
             let fb_chunk_index_next;
             let is_edge_x = (x_loc as f32 / 8.).floor() == 7.;
@@ -363,23 +362,28 @@ impl Chip8Sys {
             }
             // Calculate the offset based on x's location
             let offset = x_loc % 8;
-            let fb_chunk_index_original= self.frame_buffer[fb_chunk_index as usize];
-            let fb_chunk_index_next_original= self.frame_buffer[fb_chunk_index_next as usize];
+            let fb_chunk_index_original = self.frame_buffer[fb_chunk_index as usize];
+            let fb_chunk_index_next_original = self.frame_buffer[fb_chunk_index_next as usize];
             // Draw the bits using xor
             self.frame_buffer[fb_chunk_index as usize] ^= sprite_pxs >> offset;
             // Update the flag if fb was 1 and became 0
-            let flag_for_index = !(self.frame_buffer[fb_chunk_index as usize] & fb_chunk_index_original) & fb_chunk_index_original;
+            let flag_for_index = !(self.frame_buffer[fb_chunk_index as usize]
+                & fb_chunk_index_original)
+                & fb_chunk_index_original;
             // println!("flag_for_index: ");
             // println!("original: {:08b}", fb_chunk_index_original);
             // println!("new     : {:08b}", self.frame_buffer[fb_chunk_index as usize]);
             // println!("flag    : {:08b}", flag_for_index);
             // default to false so we don't mess with the flag during clipping
-            let mut flag_for_next = 0; 
+            let mut flag_for_next = 0;
             // Only do this if we're wrapping or we're clipping but not at the edge
             // println!("clipping {}, is_edge_x {}",!self.is_wrap_draw(), !is_edge_x);
             if self.is_wrap_draw() | (!self.is_wrap_draw() & !is_edge_x) {
-                self.frame_buffer[fb_chunk_index_next as usize] ^= (((sprite_pxs as u16) << (8 - offset)) & 0xFF) as u8;
-                flag_for_next = !(self.frame_buffer[fb_chunk_index_next as usize] & fb_chunk_index_next_original) & fb_chunk_index_next_original;
+                self.frame_buffer[fb_chunk_index_next as usize] ^=
+                    (((sprite_pxs as u16) << (8 - offset)) & 0xFF) as u8;
+                flag_for_next = !(self.frame_buffer[fb_chunk_index_next as usize]
+                    & fb_chunk_index_next_original)
+                    & fb_chunk_index_next_original;
             }
             // println!("flag_for_next: ");
             // println!("original: {:08b}", fb_chunk_index_next_original);
@@ -443,7 +447,7 @@ pub mod test {
     fn test_clear_screen() {
         let mut chip8 = single_instruction_chip_8(0x00E0);
         chip8.frame_buffer = [0xAA; 256];
-        chip8.run();
+        let _ = chip8.run().unwrap();
         assert_eq!([0x00; 256], chip8.frame_buffer);
     }
 
@@ -451,7 +455,7 @@ pub mod test {
     // Tests Jump to memory location NNN; 0x1NNN
     fn test_jump() {
         let mut chip8 = single_instruction_chip_8(0x1556);
-        chip8.run();
+        let _ = chip8.run().unwrap();
         assert_eq!(chip8.program_counter, 0x556);
     }
 
@@ -462,7 +466,7 @@ pub mod test {
         let mut chip8 = single_instruction_chip_8(0x00EE);
         chip8.stack_pointer = stk_ptr;
         chip8.stack = [0xFF; 16];
-        chip8.run();
+        let _ = chip8.run().unwrap();
         // want to make sure we cleared the old stack pointer's location
         // to simulate poping something off the stack
         assert!(
@@ -483,7 +487,7 @@ pub mod test {
         let stk_ptr = 3;
         let mut chip8 = single_instruction_chip_8(0x2000 | addr);
         chip8.stack_pointer = stk_ptr;
-        chip8.run();
+        let _ = chip8.run().unwrap();
         // stack pointer should be incremented by 1
         assert!(
             chip8.stack_pointer == (stk_ptr + 1),
@@ -512,7 +516,7 @@ pub mod test {
         let nn: u8 = 0xAA;
         let mut chip8 = single_instruction_chip_8(0x3000 | reg_x << 8 | nn as u16);
         chip8.register[reg_x as usize] = nn;
-        chip8.run();
+        let _ = chip8.run().unwrap();
         // program counter should be incremented by 2 if equal
         // program counter has already been updated by 2 from the fetch section
         assert_eq!(chip8.program_counter, 0x204);
@@ -525,7 +529,7 @@ pub mod test {
         let nn: u8 = 0xAA;
         let mut chip8 = single_instruction_chip_8(0x3000 | reg_x << 8 | nn as u16);
         chip8.register[reg_x as usize] = !nn;
-        chip8.run();
+        let _ = chip8.run().unwrap();
         // program counter should NOT be incremented since register X is not equal
         // program counter has already been updated by 2 from the fetch section
         assert_eq!(chip8.program_counter, 0x202);
@@ -538,7 +542,7 @@ pub mod test {
         let nn: u8 = 0xAA;
         let mut chip8 = single_instruction_chip_8(0x4000 | reg_x << 8 | nn as u16);
         chip8.register[reg_x as usize] = !nn;
-        chip8.run();
+        let _ = chip8.run().unwrap();
         // program counter should be incremented by 2 if not equal
         // program counter has already been updated by 2 from the fetch section
         assert_eq!(chip8.program_counter, 0x204);
@@ -551,7 +555,7 @@ pub mod test {
         let nn: u8 = 0xAA;
         let mut chip8 = single_instruction_chip_8(0x4000 | reg_x << 8 | nn as u16);
         chip8.register[reg_x as usize] = nn;
-        chip8.run();
+        let _ = chip8.run().unwrap();
         // program counter should NOT be incremented since register X is equal
         // program counter has already been updated by 2 from the fetch section
         assert_eq!(chip8.program_counter, 0x202);
@@ -566,7 +570,7 @@ pub mod test {
         let mut chip8 = single_instruction_chip_8(0x4000 | reg_x << 8 | reg_y << 4);
         chip8.register[reg_x as usize] = reg_val;
         chip8.register[reg_y as usize] = reg_val;
-        chip8.run();
+        let _ = chip8.run().unwrap();
         // program counter should be incremented by 2 because reg[x] = reg[y]
         // program counter has already been updated by 2 from the fetch section
         assert_eq!(chip8.program_counter, 0x204);
@@ -582,7 +586,7 @@ pub mod test {
         chip8.register[reg_x as usize] = reg_val;
         chip8.register[reg_y as usize] = !reg_val;
         // println!("{:02X} != {:02X}", reg_val, !reg_val);
-        chip8.run();
+        let _ = chip8.run().unwrap();
         // program counter should NOT be incremented since reg[x] != reg[y]
         // program counter has already been updated by 2 from the fetch section
         assert_ne!(
@@ -592,11 +596,11 @@ pub mod test {
     }
 
     #[test]
-    // Tests Load Register X with NN; 0x6XNN 
+    // Tests Load Register X with NN; 0x6XNN
     fn test_load_register() {
         // set register 0xA to be 0x88
         let mut chip8 = single_instruction_chip_8(0x6A88);
-        chip8.run();
+        let _ = chip8.run().unwrap();
         assert_eq!(0x88, chip8.register[0xA]);
     }
 
@@ -608,7 +612,7 @@ pub mod test {
         // directly access the register for testing purposes
         // println!("sum: {:02X}", 0x04 + 0x0B);
         chip8.register[0xA] = 0x04;
-        chip8.run();
+        let _ = chip8.run().unwrap();
         // 0x0B + 0x04 = 0x10
         assert_eq!(0x0F, chip8.register[0xA]);
     }
@@ -620,9 +624,15 @@ pub mod test {
         let val = 0xFF;
         let mut chip8 = single_instruction_chip_8(0x7000 | reg_x << 8 | 1);
         chip8.register[reg_x as usize] = val;
-        chip8.run();
-        assert_eq!(chip8.register[reg_x as usize], 0, "Chip-8 0x7XNN should have added 1 to 0xFF making it 0.");
-        assert_eq!(chip8.register[0xF], 1, "Chip-8 0x7XNN should have set the overflow bit when adding 1 to 0xFF.");
+        let _ = chip8.run().unwrap();
+        assert_eq!(
+            chip8.register[reg_x as usize], 0,
+            "Chip-8 0x7XNN should have added 1 to 0xFF making it 0."
+        );
+        assert_eq!(
+            chip8.register[0xF], 1,
+            "Chip-8 0x7XNN should have set the overflow bit when adding 1 to 0xFF."
+        );
     }
 
     #[test]
@@ -630,7 +640,7 @@ pub mod test {
     // Tests that Chip8Sys::run() panics if you send an invalid N value for 0x8XYN
     fn test_invalid_0x8xyn_instruction_panics() {
         let mut chip8 = single_instruction_chip_8(0x8A0B);
-        chip8.run();
+        let _ = chip8.run().unwrap();
     }
     #[test]
     // Tests set reg[X] to reg[Y]; 0x8XY0
@@ -640,7 +650,7 @@ pub mod test {
         let test_val = 0x55;
         let mut chip8 = single_instruction_chip_8(0x8000 | reg_x << 8 | reg_y << 4);
         chip8.register[reg_y as usize] = test_val;
-        chip8.run();
+        let _ = chip8.run().unwrap();
         assert_eq!(chip8.register[reg_x as usize], test_val);
     }
 
@@ -653,7 +663,7 @@ pub mod test {
         let mut chip8 = single_instruction_chip_8(0x8000 | reg_x << 8 | reg_y << 4 | 1);
         chip8.register[reg_y as usize] = test_val;
         chip8.register[reg_x as usize] = !test_val;
-        chip8.run();
+        let _ = chip8.run().unwrap();
         assert_eq!(
             chip8.register[reg_x as usize],
             test_val | !test_val, // should be 0xFF
@@ -669,7 +679,7 @@ pub mod test {
         let mut chip8 = single_instruction_chip_8(0x8000 | reg_x << 8 | reg_y << 4 | 2);
         chip8.register[reg_y as usize] = 0x0F;
         chip8.register[reg_x as usize] = 0xA5;
-        chip8.run();
+        let _ = chip8.run().unwrap();
         assert_eq!(
             // 0x0F & 0xA5 == 0x05
             chip8.register[reg_x as usize],
@@ -685,7 +695,7 @@ pub mod test {
         let mut chip8 = single_instruction_chip_8(0x8000 | reg_x << 8 | reg_y << 4 | 3);
         chip8.register[reg_x as usize] = 0xFA;
         chip8.register[reg_y as usize] = 0xAF;
-        chip8.run();
+        let _ = chip8.run().unwrap();
         assert_eq!(
             chip8.register[reg_x as usize], 0x55,
             "Chip-8 0x8XY3 should have set reg x to reg x XOR reg y"
@@ -700,7 +710,7 @@ pub mod test {
         let mut chip8 = single_instruction_chip_8(0x8000 | reg_x << 8 | reg_y << 4 | 4);
         chip8.register[reg_x as usize] = 0x01;
         chip8.register[reg_y as usize] = 0x09;
-        chip8.run();
+        let _ = chip8.run().unwrap();
         assert_eq!(
             chip8.register[reg_x as usize], 0x0A,
             "Chip-8 0x8XY4 should have set reg x to reg x PLUS reg y"
@@ -714,20 +724,29 @@ pub mod test {
         let mut chip8 = single_instruction_chip_8(0x8000 | reg_x << 8 | reg_y << 4 | 4);
         chip8.register[reg_x as usize] = 0xFF;
         chip8.register[reg_y as usize] = 0x01;
-        chip8.run();
-        assert_eq!(chip8.register[reg_x as usize], 0x00, "Chip-8 0x8XY4 should have set reg x to 0 after adding 1 to 0xFF.");
-        assert_eq!(chip8.register[0xf], 0x1, "Chip-8 0x8XY4 should have set the overflow bit when adding 1 to 0xFF.");
+        let _ = chip8.run().unwrap();
+        assert_eq!(
+            chip8.register[reg_x as usize], 0x00,
+            "Chip-8 0x8XY4 should have set reg x to 0 after adding 1 to 0xFF."
+        );
+        assert_eq!(
+            chip8.register[0xf], 0x1,
+            "Chip-8 0x8XY4 should have set the overflow bit when adding 1 to 0xFF."
+        );
     }
     #[test]
-    // Tests that you can use VF as a register and have it overwritten 
+    // Tests that you can use VF as a register and have it overwritten
     fn test_add_regx_regy_vf_overwrite() {
         let reg_x = 0xF;
         let reg_y = 0xE;
         let mut chip8 = single_instruction_chip_8(0x8000 | reg_x << 8 | reg_y << 4 | 4);
         chip8.register[reg_x as usize] = 0xFF;
         chip8.register[reg_y as usize] = 0x0F;
-        chip8.run();
-        assert_eq!(chip8.register[reg_x as usize], 0x01, "Chip-8 0x8XY4 should have set reg x to 1 due to overwrite after adding 0xF to 0xFF.");
+        let _ = chip8.run().unwrap();
+        assert_eq!(
+            chip8.register[reg_x as usize], 0x01,
+            "Chip-8 0x8XY4 should have set reg x to 1 due to overwrite after adding 0xF to 0xFF."
+        );
     }
     #[test]
     // Tests set reg[x] to reg[x] MINUS reg[y]; 0x8XY5
@@ -737,7 +756,7 @@ pub mod test {
         let mut chip8 = single_instruction_chip_8(0x8000 | reg_x << 8 | reg_y << 4 | 5);
         chip8.register[reg_x as usize] = 0x0F;
         chip8.register[reg_y as usize] = 0x04;
-        chip8.run();
+        let _ = chip8.run().unwrap();
         assert_eq!(
             chip8.register[reg_x as usize], 0x0B,
             "Chip-8 0x8XY5 should have set reg x to reg x PLUS reg y"
@@ -758,7 +777,7 @@ pub mod test {
         let mut chip8 = single_instruction_chip_8(0x8000 | reg_x << 8 | reg_y << 4 | 5);
         chip8.register[reg_x as usize] = 0x04;
         chip8.register[reg_y as usize] = 0x08;
-        chip8.run();
+        let _ = chip8.run().unwrap();
         assert_eq!(
             chip8.register[reg_x as usize],
             // this is -4 in binary if you take the MSB as a sign bit
@@ -780,7 +799,7 @@ pub mod test {
         let mut chip8 = single_instruction_chip_8(0x8000 | reg_x << 8 | reg_y << 4 | 5);
         chip8.register[reg_x as usize] = 0x08;
         chip8.register[reg_y as usize] = 0x04;
-        chip8.run();
+        let _ = chip8.run().unwrap();
         // also need to make sure the carry bit was set since this should still be a
         // positive number (yes that's feels backwards but VF = NOT borrow according to docs)
         assert_eq!(
@@ -790,16 +809,17 @@ pub mod test {
     }
     #[test]
     // Tests set reg[x] to reg[x] divide by 2 without carry; 0x8X_6
-    // Assumes reg x is reg y shifted 
+    // Assumes reg x is reg y shifted
     fn test_div2_regx_regy() {
         let reg_x = 0x2;
         let reg_y = 0xA;
         let val = 0xC;
-        let mut chip8 = single_instruction_chip_8(0x8000 | reg_x << 8 | reg_y << 4| 6);
+        let mut chip8 = single_instruction_chip_8(0x8000 | reg_x << 8 | reg_y << 4 | 6);
         chip8.register[reg_y as usize] = val; // 12 in dec
-        chip8.run();
+        let _ = chip8.run().unwrap();
         assert_eq!(
-            chip8.register[reg_x as usize], (val as f32 / 2.) as u8,
+            chip8.register[reg_x as usize],
+            (val as f32 / 2.) as u8,
             "Chip-8 0x8X_6 did not divide register x by 2"
         );
         // check the carry which shouldn't change because it's even
@@ -811,16 +831,17 @@ pub mod test {
 
     #[test]
     // Tests set reg[x] to reg[x] divide by 2 with carry; 0x8X_6
-    // Assumes reg x is reg y shifted 
+    // Assumes reg x is reg y shifted
     fn test_div2_regx_odd_nums_regy() {
         let reg_x = 0x2;
         let reg_y = 0xA;
         let val = 0xD; // 13 in dec;
         let mut chip8 = single_instruction_chip_8(0x8000 | reg_x << 8 | reg_y << 4 | 6);
         chip8.register[reg_y as usize] = val;
-        chip8.run();
+        let _ = chip8.run().unwrap();
         assert_eq!(
-            chip8.register[reg_x as usize], (val as f32 /2.).floor() as u8,
+            chip8.register[reg_x as usize],
+            (val as f32 / 2.).floor() as u8,
             "Chip-8 0x8X_6 register x should be divided by two and rounded down"
         );
         // check the carry which shouldn't change because it's even
@@ -831,12 +852,18 @@ pub mod test {
     }
     #[test]
     // Tests set reg[x] to reg[x] divide by 2 without carry; 0x8X_6
-    // Assumes reg x is reg y shifted 
+    // Assumes reg x is reg y shifted
     fn test_div2_regx() {
         let reg_x = 0x2;
-        let mut chip8 = single_instruction_chip_8_custom_quirks(0x8000 | reg_x << 8 | 6, false, false, false, true);
+        let mut chip8 = single_instruction_chip_8_custom_quirks(
+            0x8000 | reg_x << 8 | 6,
+            false,
+            false,
+            false,
+            true,
+        );
         chip8.register[reg_x as usize] = 0xC; // 12 in dec
-        chip8.run();
+        let _ = chip8.run().unwrap();
         assert_eq!(
             chip8.register[reg_x as usize], 0x6,
             "Chip-8 0x8X_6 did not divide register x by 2"
@@ -850,12 +877,18 @@ pub mod test {
 
     #[test]
     // Tests set reg[x] to reg[x] divide by 2 with carry; 0x8X_6
-    // Assumes reg x is reg y shifted 
+    // Assumes reg x is reg y shifted
     fn test_div2_regx_odd_nums() {
         let reg_x = 0x2;
-        let mut chip8 = single_instruction_chip_8_custom_quirks(0x8000 | reg_x << 8 | 6, false, false,false,true);
+        let mut chip8 = single_instruction_chip_8_custom_quirks(
+            0x8000 | reg_x << 8 | 6,
+            false,
+            false,
+            false,
+            true,
+        );
         chip8.register[reg_x as usize] = 0xD; // 13 in dec
-        chip8.run();
+        let _ = chip8.run().unwrap();
         assert_eq!(
             chip8.register[reg_x as usize], 0x6,
             "Chip-8 0x8X_6 register x should be divided by two and rounded down"
@@ -874,7 +907,7 @@ pub mod test {
         let mut chip8 = single_instruction_chip_8(0x8000 | reg_x << 8 | reg_y << 4 | 7);
         chip8.register[reg_x as usize] = 0x04;
         chip8.register[reg_y as usize] = 0x0F;
-        chip8.run();
+        let _ = chip8.run().unwrap();
         assert_eq!(
             chip8.register[reg_x as usize], 0x0B,
             "Chip-8 0x8XY5 should have set reg x to reg x PLUS reg y"
@@ -895,7 +928,7 @@ pub mod test {
         let mut chip8 = single_instruction_chip_8(0x8000 | reg_x << 8 | reg_y << 4 | 7);
         chip8.register[reg_x as usize] = 0x08;
         chip8.register[reg_y as usize] = 0x04;
-        chip8.run();
+        let _ = chip8.run().unwrap();
         assert_eq!(
             chip8.register[reg_x as usize],
             // this is -4 in raw binary if you use the MSB as a sign bit
@@ -915,9 +948,15 @@ pub mod test {
     // Assumin that VX is modded in place
     fn test_2x_regx() {
         let reg_x = 0x4;
-        let mut chip8 = single_instruction_chip_8_custom_quirks(0x8000 | reg_x << 8 | 0xE, false, false, false, true);
+        let mut chip8 = single_instruction_chip_8_custom_quirks(
+            0x8000 | reg_x << 8 | 0xE,
+            false,
+            false,
+            false,
+            true,
+        );
         chip8.register[reg_x as usize] = 0x4;
-        chip8.run();
+        let _ = chip8.run().unwrap();
         assert_eq!(
             chip8.register[reg_x as usize], 0x8,
             "Chip-8 0x8X_E should have multiplied register x by 2."
@@ -934,9 +973,15 @@ pub mod test {
     fn test_2x_regx_overflow() {
         let reg_x = 0x4;
         let val = 0xAA;
-        let mut chip8 = single_instruction_chip_8_custom_quirks(0x8000 | reg_x << 8 | 0xE, true,true,false,true);
+        let mut chip8 = single_instruction_chip_8_custom_quirks(
+            0x8000 | reg_x << 8 | 0xE,
+            true,
+            true,
+            false,
+            true,
+        );
         chip8.register[reg_x as usize] = val;
-        chip8.run();
+        let _ = chip8.run().unwrap();
         assert_eq!(
             chip8.register[reg_x as usize],
             // mulitply and mask off the overflow bits so it matches chip8's out
@@ -949,16 +994,16 @@ pub mod test {
             "Chip-8 0x8X_E should have set the reg F bit to denote overflow."
         )
     }
-    
+
     #[test]
     // Tests set reg[x] to reg[x] multiplied by 2; 0x8X_E
     // Assuming that VX is set to shifted VY
     fn test_2x_regx_regy() {
         let reg_x = 0x4;
         let reg_y = 0x05;
-        let mut chip8 = single_instruction_chip_8(0x8000 | reg_x << 8 | reg_y << 4| 0xE);
+        let mut chip8 = single_instruction_chip_8(0x8000 | reg_x << 8 | reg_y << 4 | 0xE);
         chip8.register[reg_y as usize] = 0x4;
-        chip8.run();
+        let _ = chip8.run().unwrap();
         assert_eq!(
             chip8.register[reg_x as usize], 0x8,
             "Chip-8 0x8X_E should have multiplied register x by 2."
@@ -978,7 +1023,7 @@ pub mod test {
         let val = 0xAA;
         let mut chip8 = single_instruction_chip_8(0x8000 | reg_x << 8 | reg_y << 4 | 0xE);
         chip8.register[reg_y as usize] = val;
-        chip8.run();
+        let _ = chip8.run().unwrap();
         assert_eq!(
             chip8.register[reg_x as usize],
             // mulitply and mask off the overflow bits so it matches chip8's out
@@ -991,7 +1036,7 @@ pub mod test {
             "Chip-8 0x8X_E should have set the reg F bit to denote overflow."
         )
     }
-    
+
     #[test]
     // Tests SKip next instruction if reg[X] != reg[Y]; 0x9XY0
     fn test_skip_if_ne_skip() {
@@ -1000,12 +1045,12 @@ pub mod test {
         let mut chip8 = single_instruction_chip_8(0x9000 | reg_x << 8 | reg_y << 4);
         chip8.register[reg_x as usize] = 0x6;
         chip8.register[reg_y as usize] = chip8.register[reg_x as usize] + 0x2;
-        chip8.run();
+        let _ = chip8.run().unwrap();
         assert_eq!(
             chip8.program_counter, 0x204,
             "Chip-8 0x9XY0 should have incremented the program counter"
         );
-    } 
+    }
     #[test]
     // Tests Skip next instruction if reg[X] != reg[Y]; 0x9XY0
     // Testing the negative case (where it doesn't skip forward bc x=y)
@@ -1015,7 +1060,7 @@ pub mod test {
         let mut chip8 = single_instruction_chip_8(0x9000 | reg_x << 8 | reg_y << 4);
         chip8.register[reg_x as usize] = 0x6;
         chip8.register[reg_y as usize] = chip8.register[reg_x as usize];
-        chip8.run();
+        let _ = chip8.run().unwrap();
         assert_eq!(
             chip8.program_counter, 0x202,
             "Chip-8 0x9XY0 should not have incremented the program counter"
@@ -1026,7 +1071,7 @@ pub mod test {
     fn test_set_register_i() {
         // Set register I to 0x9A9
         let mut chip8 = single_instruction_chip_8(0xA9A9);
-        chip8.run();
+        let _ = chip8.run().unwrap();
         assert_eq!(chip8.register_i, 0x9A9);
     }
     #[test]
@@ -1036,7 +1081,7 @@ pub mod test {
         let v0 = 0x50;
         let mut chip8 = single_instruction_chip_8(0xB000 | nnn);
         chip8.register[0] = v0;
-        chip8.run();
+        let _ = chip8.run().unwrap();
         assert_eq!(
             chip8.program_counter,
             v0 as u16 + nnn,
@@ -1052,11 +1097,11 @@ pub mod test {
         let nn = 0xFF;
         let reg_x = 0x4;
         let mut chip8 = single_instruction_chip_8(0xC000 | reg_x << 8 | nn);
-        chip8.run();
+        let _ = chip8.run().unwrap();
         if chip8.register[reg_x as usize] == 0 {
             // in the unlikely case we get 0 the first time re run it.
             chip8.program_counter = 0x200;
-            chip8.run();
+            let _ = chip8.run().unwrap();
         }
         assert_ne!(
             chip8.register[reg_x as usize], 0,
@@ -1070,11 +1115,11 @@ pub mod test {
         let nn = 0x00;
         let reg_x = 0x4;
         let mut chip8 = single_instruction_chip_8(0xC000 | reg_x << 8 | nn);
-        chip8.run();
+        let _ = chip8.run().unwrap();
         if chip8.register[reg_x as usize] == 0 {
             // in the unlikely case we get 0 the first time re run it.
             chip8.program_counter = 0x200;
-            chip8.run();
+            let _ = chip8.run().unwrap();
         }
         assert_eq!(
             chip8.register[reg_x as usize], 0,
@@ -1094,7 +1139,7 @@ pub mod test {
         chip8.register[0x2] = 0x8;
         // set register I to reference the sprite for 0 in memory 0x050
         chip8.register_i = 0x050;
-        chip8.run();
+        let _ = chip8.run().unwrap();
         // make the expected frame empty
         let mut expected_frame_buffer = [0; 256];
         // manually load the 0 sprite into the right spots
@@ -1116,7 +1161,7 @@ pub mod test {
     // Tests that if you sent the incorrect NN value for 0xEXNN Chip8Sys::run() panics
     fn test_invalid_0xe_instruction_panics() {
         let mut chip8 = single_instruction_chip_8(0xE000 | 0xFF);
-        chip8.run();
+        let _ = chip8.run().unwrap();
     }
 
     #[test]
@@ -1126,7 +1171,7 @@ pub mod test {
         let reg_x = 0x1;
         let mut chip8 = single_instruction_chip_8(0xE000 | reg_x << 8 | 0x9E);
         chip8.register[reg_x as usize] = 0xF0;
-        chip8.run();
+        let _ = chip8.run().unwrap();
     }
     #[test]
     // Tests Skip if key with value of reg[x] is pressed; 0xEX9E
@@ -1136,7 +1181,7 @@ pub mod test {
         let mut chip8 = single_instruction_chip_8(0xE000 | reg_x << 8 | 0x9E);
         chip8.register[reg_x as usize] = 0xB;
         chip8.keys[key] = true;
-        chip8.run();
+        let _ = chip8.run().unwrap();
         assert_eq!(
             chip8.program_counter, 0x204,
             "Chip-8 0xEX9E should have incremented program counter on key press."
@@ -1151,7 +1196,7 @@ pub mod test {
         let mut chip8 = single_instruction_chip_8(0xE000 | reg_x << 8 | 0x9E);
         chip8.register[reg_x as usize] = key - 1;
         chip8.keys[key as usize] = true;
-        chip8.run();
+        let _ = chip8.run().unwrap();
         assert_eq!(
             chip8.program_counter, 0x202,
             "Chip-8 0xEX9E should have incremented program counter on key press."
@@ -1165,7 +1210,7 @@ pub mod test {
         let reg_x = 0x1;
         let mut chip8 = single_instruction_chip_8(0xE000 | reg_x << 8 | 0xA1);
         chip8.register[reg_x as usize] = 0xF0;
-        chip8.run();
+        let _ = chip8.run().unwrap();
     }
     #[test]
     // Tests Skip if key with value of reg[x] is pressed; 0xEXA1
@@ -1178,7 +1223,7 @@ pub mod test {
         chip8.keys = [true; 16];
         // unpress the test key
         chip8.keys[key as usize] = false;
-        chip8.run();
+        let _ = chip8.run().unwrap();
         assert_eq!(
             chip8.program_counter, 0x204,
             "Chip-8 0xEXA1 should have incremented program counter on key not pressed."
@@ -1193,7 +1238,7 @@ pub mod test {
         let mut chip8 = single_instruction_chip_8(0xE000 | reg_x << 8 | 0xA1);
         chip8.register[reg_x as usize] = key;
         chip8.keys[key as usize] = true;
-        chip8.run();
+        let _ = chip8.run().unwrap();
         assert_eq!(
             chip8.program_counter, 0x202,
             "Chip-8 0xEXA1 should not have incremented program counter on key not pressed."
@@ -1205,7 +1250,7 @@ pub mod test {
     // Tests that Chip8Sys::run() panics if you send an invalid NN value for 0xFXNN
     fn test_invalid_0xf_instruction_panics() {
         let mut chip8 = single_instruction_chip_8(0xF0FF);
-        chip8.run();
+        let _ = chip8.run().unwrap();
     }
 
     #[test]
@@ -1214,7 +1259,7 @@ pub mod test {
         let reg_x = 0xA;
         let mut chip8 = single_instruction_chip_8(0xF000 | reg_x << 8 | 07);
         chip8.delay_timer = 50;
-        chip8.run();
+        let _ = chip8.run().unwrap();
         assert_eq!(
             chip8.register[reg_x as usize], chip8.delay_timer,
             "Chip-8 0xFX07 should have loaded dealy timer's current value into register[x]"
@@ -1226,7 +1271,7 @@ pub mod test {
     fn test_wait_for_key_press_pause_function() {
         let mut chip8 = single_instruction_chip_8(0xF000 | 0x0A);
         for _ in 0..4 {
-            chip8.run();
+            let _ = chip8.run().unwrap();
             if chip8.program_counter != 0x202 {
                 panic!("Chip-8 0xFX0A should not have incremented the program counter");
             }
@@ -1239,13 +1284,13 @@ pub mod test {
         let reg_x = 0xA;
         let pressed_key = 0x8;
         let mut chip8 = single_instruction_chip_8(0xF000 | reg_x << 8 | 0x0A);
-        chip8.run();
+        let _ = chip8.run().unwrap();
         assert_eq!(
             chip8.register[reg_x as usize], 0,
             "Chip-8 0xFX0A register[x] should be 0"
         );
         chip8.keys[pressed_key as usize] = true;
-        chip8.run();
+        let _ = chip8.run().unwrap();
         assert_eq!(
             chip8.register[reg_x as usize], pressed_key,
             "Chip-8 0xFX0A pressed key should have been stored in register[x]."
@@ -1258,14 +1303,14 @@ pub mod test {
         let reg_x = 0x2;
         let pressed_key = 0x8;
         let mut chip8 = single_instruction_chip_8(0xF000 | reg_x << 8 | 0x0A);
-        chip8.run();
+        let _ = chip8.run().unwrap();
         assert_eq!(
             chip8.register[reg_x as usize], 0,
             "Chip-8 0xFX0A register[x] should be 0"
         );
         chip8.keys[pressed_key as usize] = true;
         chip8.keys[(pressed_key + 2) as usize] = true;
-        chip8.run();
+        let _ = chip8.run().unwrap();
         assert_eq!(
             chip8.register[reg_x as usize], pressed_key,
             "Chip-8 0xFX0A the lower of the two pressed key should have been stored in register[x]."
@@ -1286,21 +1331,21 @@ pub mod test {
         chip8.memory[0x203] = 0xE0;
         // fill the screen so that I can test if it got cleared
         chip8.frame_buffer = fill_screen;
-        chip8.run();
+        let _ = chip8.run().unwrap();
         assert_eq!(
             chip8.register[reg_x as usize], 0,
             "Chip-8 0xFX0A register[x] should be 0"
         );
-        chip8.run();
+        let _ = chip8.run().unwrap();
         // Nothing changed so the frame should still be filled
         assert_eq!(
             chip8.frame_buffer, fill_screen,
             "Chip-8 0xFX0A should not have moved to the clear screen instruction."
         );
         chip8.keys[pressed_key as usize] = true;
-        chip8.run();
+        let _ = chip8.run().unwrap();
         assert_eq!(
-            chip8.frame_buffer, [0;256],
+            chip8.frame_buffer, [0; 256],
             "Chip-8 0xFX0A pressed key should have moved to the next instruction and cleared the screen."
         );
     }
@@ -1312,7 +1357,7 @@ pub mod test {
         let value = 0xAA;
         let mut chip8 = single_instruction_chip_8(0xF000 | reg_x << 8 | 0x15);
         chip8.register[reg_x as usize] = value;
-        chip8.run();
+        let _ = chip8.run().unwrap();
         assert_eq!(
             chip8.delay_timer, value,
             "Chip-8 0xFX15 should have loaded delay timer with register X's value"
@@ -1326,7 +1371,7 @@ pub mod test {
         let value = 0xAA;
         let mut chip8 = single_instruction_chip_8(0xF000 | reg_x << 8 | 0x18);
         chip8.register[reg_x as usize] = value;
-        chip8.run();
+        let _ = chip8.run().unwrap();
         assert_eq!(
             chip8.sound_timer, value,
             "Chip-8 0xFX15 should have loaded sound timer with register X's value"
@@ -1341,7 +1386,7 @@ pub mod test {
         let mut chip8 = single_instruction_chip_8(0xF000 | reg_x << 8 | 0x1E);
         chip8.register[reg_x as usize] = x_val;
         chip8.register_i = i_val;
-        chip8.run();
+        let _ = chip8.run().unwrap();
         assert_eq!(
             chip8.register_i,
             i_val + x_val as u16,
@@ -1358,7 +1403,7 @@ pub mod test {
         ];
         for (count, loc) in sprite_locs.iter().enumerate() {
             let mut chip8 = single_instruction_chip_8(0xF000 | (count as u16) << 8 | 0x29);
-            chip8.run();
+            let _ = chip8.run().unwrap();
             assert_eq!(
                 &chip8.register_i, loc,
                 "Chip-8 0xFX29 should have set register I to sprite {:02X}'s location",
@@ -1376,7 +1421,7 @@ pub mod test {
         let mut chip8 = single_instruction_chip_8(0xF000 | reg_x << 8 | 0x33);
         chip8.register[reg_x as usize] = value;
         chip8.register_i = mem_loc;
-        chip8.run();
+        let _ = chip8.run().unwrap();
         assert_eq!(
             chip8.memory[mem_loc as usize], 1,
             "Chip-8 0xFX33 should have stored hundreds place into memory location stored in I"
@@ -1396,8 +1441,8 @@ pub mod test {
     #[test]
     // Tests the storage of register 0 to register X into memory starting at register I
     fn test_load_x_to_memory() {
-        let reg_x:u8 = 0xA;
-        let val:u8 = 0xAA;
+        let reg_x: u8 = 0xA;
+        let val: u8 = 0xAA;
         let mem = 0x500;
         let mut chip8 = single_instruction_chip_8(0xF000 | (reg_x as u16) << 8 | 0x55);
         // load up some values for register 0 to X
@@ -1405,22 +1450,23 @@ pub mod test {
             chip8.register[count as usize] = (val + count) & 0xFF;
         }
         chip8.register_i = mem;
-        chip8.run();
+        let _ = chip8.run().unwrap();
         for count in 0..=reg_x {
             assert_eq!(
-                chip8.memory[(mem+count as u16) as usize], 
+                chip8.memory[(mem + count as u16) as usize],
                 (val + count) & 0xFF,
                 "Chip-8 0xFX55 should have set register {:02X} to {:02X}",
-                count, 
-                val+count);
+                count,
+                val + count
+            );
         }
     }
 
     #[test]
     // Tests the read of register 0 to register X into memory starting at register I
     fn test_read_x_to_memory() {
-        let reg_x:u8 = 0xA;
-        let val:u8 = 0xAA;
+        let reg_x: u8 = 0xA;
+        let val: u8 = 0xAA;
         let mem: u16 = 0x500;
         let mut chip8 = single_instruction_chip_8(0xF000 | (reg_x as u16) << 8 | 0x65);
         // load up some values for register 0 to X
@@ -1428,14 +1474,15 @@ pub mod test {
             chip8.memory[(mem + count as u16) as usize] = (val + count) & 0xFF;
         }
         chip8.register_i = mem as u16;
-        chip8.run();
+        let _ = chip8.run().unwrap();
         for count in 0..=reg_x {
             assert_eq!(
                 chip8.register[count as usize],
                 (val + count) & 0xFF,
                 "Chip-8 0xFX65 should have set register {:02X} to {:02X}",
-                count, 
-                val+count);
+                count,
+                val + count
+            );
         }
     }
 
@@ -1445,7 +1492,7 @@ pub mod test {
     // Tests TEMPLATE
     fn test_chip8_command() {
         let mut chip8 = single_instruction_chip_8(0x0000);
-        chip8.run();
+        let _ = chip8.run().unwrap();
         assert_eq!(1, 1);
     }
 
@@ -1461,8 +1508,15 @@ pub mod test {
     // NOTE: Helper functions for testing
     // Helper function to build a Chip8Sys easily with 1 instruction at 200
     // Uses custom quirks
-    pub fn single_instruction_chip_8_custom_quirks(instruction: u16, is_inc_index: bool, is_vf_reset: bool, is_wrap: bool, is_shift_in_place: bool) -> Chip8Sys {
-        let mut chip8 = Chip8Sys::new_set_quirks(is_inc_index, is_vf_reset, is_wrap, is_shift_in_place);
+    pub fn single_instruction_chip_8_custom_quirks(
+        instruction: u16,
+        is_inc_index: bool,
+        is_vf_reset: bool,
+        is_wrap: bool,
+        is_shift_in_place: bool,
+    ) -> Chip8Sys {
+        let mut chip8 =
+            Chip8Sys::new_set_quirks(is_inc_index, is_vf_reset, is_wrap, is_shift_in_place);
         chip8.memory[0x200] = ((instruction & 0xFF00) >> 8) as u8;
         chip8.memory[0x201] = (instruction & 0xFF) as u8;
         chip8

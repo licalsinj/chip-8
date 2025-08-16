@@ -7,7 +7,7 @@
 Ordered by how likely they are to be done (or be able to be fixed).
 
 - [x] Convert this to a library instead of a binary
-- [ ] Have Chip8Sys::run() return Result<(),Err>
+- [x] Have Chip8Sys::run() return Result<(),Err>
 - [ ] Implement delay and sound timer on their own threads?
 - [ ] Fix Flashing from Clear Screen actions
   - Looking at the code this seems to use the delay timer to keep flashing down
@@ -32,7 +32,7 @@ Ordered by how likely they are to be done (or be able to be fixed).
 - [ ] Get Screen to Dynamically Scale
 - [ ] Make Sound Frequency Configurable
 - [ ] Make Pixel Color Configurable
-- [ ] Display Rom and register values while playing
+- [ ] Export Save States
 - [ ] Make Keyboard keys Configurable
 
 ## Completed

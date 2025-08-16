@@ -3,6 +3,8 @@ use std::env;
 use std::fs::File;
 use std::io::Read;
 
+use crate::chip8error::Chip8Error;
+
 const EMPTY_MEMORY: [u8; 4096] = [0; 4096];
 const EMPTY_REGISTER: [u8; 16] = [0; 16];
 const EMPTY_STACK: [u16; 16] = [0; 16];
@@ -136,9 +138,9 @@ impl Chip8Sys {
         }
         true
     }
-    pub fn wait(&mut self, register: u8) -> Result<(), &str> {
+    pub fn wait(&mut self, register: u8) -> Result<(), Chip8Error> {
         if register > 0xF {
-            return Err("Must store value less than 0xF (15)");
+            return Err(Chip8Error::InvalidWaitRegister(register));
         }
         self.wait_for_key_press = Some(register);
         Ok(())
@@ -228,7 +230,7 @@ mod test {
     fn test_wait_for_key_press_wait_access() {
         // send clear screen to make sure that wait doesn't change
         let mut chip8 = crate::decode::test::single_instruction_chip_8(0x00E0);
-        chip8.run();
+        let _ = chip8.run().unwrap();
         assert_eq!(
             chip8.wait_for_key_press, None,
             "Chip-8 wait_for_key_press should not have been set to anything."
@@ -240,7 +242,7 @@ mod test {
     // Tests whether or not the Corax+ test rom passes
     fn run_corax_plus_test_rom() {
         let mut chip8 = Chip8Sys::new_chip_8();
-        let file_path = "roms/3-corax+.ch8";
+        let file_path = "../roms/3-corax+.ch8";
         chip8.load_rom(String::from(file_path));
 
         let pass_fb: [u8; 256] = [
@@ -258,7 +260,7 @@ mod test {
             144, 16, 174, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
         ];
         for _ in 0..500 {
-            chip8.run();
+            let _ = chip8.run().unwrap();
         }
         assert_eq!(
             pass_fb, chip8.frame_buffer,
@@ -269,7 +271,7 @@ mod test {
     #[ignore]
     fn run_flags_test_rom() {
         let mut chip8 = Chip8Sys::new_chip_8();
-        let file_path = "roms/4-flags.ch8";
+        let file_path = "../roms/4-flags.ch8";
         chip8.load_rom(String::from(file_path));
         chip8.memory[0x1FF] = 1;
 
@@ -291,7 +293,7 @@ mod test {
         ];
 
         for _ in 0..1100 {
-            chip8.run();
+            let _ = chip8.run().unwrap();
         }
         assert_eq!(
             pass_fb, chip8.frame_buffer,
@@ -302,7 +304,7 @@ mod test {
     #[ignore]
     fn run_quirks_test_rom() {
         let mut chip8 = Chip8Sys::new_chip_8();
-        let file_path = "roms/5-quirks.ch8";
+        let file_path = "../roms/5-quirks.ch8";
         chip8.load_rom(String::from(file_path));
         chip8.memory[0x1FF] = 1;
 
@@ -324,7 +326,7 @@ mod test {
         ];
 
         for _ in 0..5000 {
-            chip8.run();
+            let _ = chip8.run().unwrap();
         }
         assert_eq!(
             pass_fb, chip8.frame_buffer,
