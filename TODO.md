@@ -15,6 +15,7 @@ Ordered by how likely they are to be done (or be able to be fixed).
 - [ ] Get Controls to be more responsive
   - Watching it through eframe it's like the chip8sys library is overwriting
       what I'm sending it it at first.
+- [ ] Get Serde working for Chip8Sys
 
   ### egui Presenter
 
@@ -23,14 +24,15 @@ Ordered by how likely they are to be done (or be able to be fixed).
 - [x] Get sound to work
 - [x] Get Button Input to work
 - [x] Show/Hide Config Windows
-- [ ] Get config windows to show/hide
+- [x] Get config windows to show/hide
   - I think I should do this in a left pane like egui demo
-- [ ] Run, Pause, Step Buttons
+- [x] Run, Pause, Step Buttons
 - [ ] Configure Quirks
 - [ ] Dynamically Upload Rom
   - [ ] Roms from Memory
   - [ ] Roms from User
 - [ ] Compile to WASM for Demo
+- [ ] Implement Serde
 
 #### Stretch Goals
 
@@ -39,6 +41,7 @@ Ordered by how likely they are to be done (or be able to be fixed).
 - [x] Make Pixel Color Configurable
 - [ ] Export Save States
 - [ ] Make Keyboard keys Configurable
+- [ ] Build a lookup table for commands to print on Control Flow Window
 
 ## Completed
 

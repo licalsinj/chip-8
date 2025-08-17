@@ -18,6 +18,9 @@ pub struct Chip8App {
     compute_info: ConfigWindow,
     screen_config: ConfigWindow,
     about: ConfigWindow,
+    control_flow: ConfigWindow,
+    run: bool,
+    single_step: bool,
 }
 
 impl Default for Chip8App {
@@ -60,8 +63,15 @@ impl Default for Chip8App {
             },
             about: ConfigWindow {
                 name: String::from("About Chip-8"),
+                // TODO: Make this true long term
+                show: false,
+            },
+            control_flow: ConfigWindow {
+                name: String::from("Control Flow"),
                 show: true,
             },
+            run: true,
+            single_step: false,
         }
     }
 }
@@ -111,22 +121,27 @@ impl eframe::App for Chip8App {
 
         // TODO: Not sure how I want to handle all these yet...
         // maybe log them in their own window?
-        match self.chip8.run() {
-            Ok(_) => (),
-            Err(e) => match e {
-                // if the N of 0xN___ is invalid it will return this and the N provided
-                Chip8Error::InvalidFirstByte(_) => (),
-                // If the X register should be <= 0xF
-                Chip8Error::InvalidRegisterX(_) => (),
-                // if the N in 0x8XYN is invalid it will return this and the N provided
-                Chip8Error::Invalid0x8XYN(_) => (),
-                // if the N in 0x8XYN is invalid it will return this and the N provided
-                Chip8Error::Invalid0xENNN(_, _) => (),
-                // if the N in 0x8XYN is invalid it will return this and the N provided
-                Chip8Error::Invalid0xFNNN(_, _) => (),
-                // If the register we're waiting for is somehow > 0xF
-                Chip8Error::InvalidWaitRegister(_) => (),
-            },
+        if self.run | self.single_step {
+            match self.chip8.run() {
+                Ok(_) => (),
+                Err(e) => match e {
+                    // if the N of 0xN___ is invalid it will return this and the N provided
+                    Chip8Error::InvalidFirstByte(_) => (),
+                    // If the X register should be <= 0xF
+                    Chip8Error::InvalidRegisterX(_) => (),
+                    // if the N in 0x8XYN is invalid it will return this and the N provided
+                    Chip8Error::Invalid0x8XYN(_) => (),
+                    // if the N in 0x8XYN is invalid it will return this and the N provided
+                    Chip8Error::Invalid0xENNN(_, _) => (),
+                    // if the N in 0x8XYN is invalid it will return this and the N provided
+                    Chip8Error::Invalid0xFNNN(_, _) => (),
+                    // If the register we're waiting for is somehow > 0xF
+                    Chip8Error::InvalidWaitRegister(_) => (),
+                },
+            }
+            if self.single_step {
+                self.single_step = false;
+            }
         }
 
         egui::CentralPanel::default().show(ctx, |ui| {
@@ -188,6 +203,7 @@ impl eframe::App for Chip8App {
                 &mut self.screen_config.show,
                 self.screen_config.name.clone(),
             );
+            ui.toggle_value(&mut self.control_flow.show, self.control_flow.name.clone());
             let is_web = cfg!(target_arch = "wasm32");
             if !is_web {
                 if ui.button("Quit").clicked() {
@@ -304,6 +320,23 @@ impl eframe::App for Chip8App {
                 ui.separator();
                 ui.label(format!("{} Source Code", special_emojis::GITHUB));
                 ui.hyperlink("https://github.com/licalsinj/chip-8");
+            });
+        egui::Window::new(self.control_flow.name.clone())
+            .open(&mut self.control_flow.show)
+            .show(ctx, |ui| {
+                ui.heading("Chip-8 Control Flow");
+                ui.label("Pause or run the emulator. When paused you can use Single Step to walk through one command at a time.");
+                ui.separator();
+                let state = if self.run { "Pause" } else { "Run" };
+                ui.toggle_value(&mut self.run, state);
+                if ui.add_enabled(!self.run, egui::Button::new("Single Step")).clicked() {
+                    self.single_step = true;
+                }
+                ui.end_row();
+                ui.label(format!("Program Counter: {:04X}", self.chip8.program_counter));
+                ui.label(format!("Previous Instruction: {:02X}{:02X}", self.chip8.memory[self.chip8.program_counter as usize - 2], self.chip8.memory[self.chip8.program_counter as usize - 1]));
+                ui.label(format!("Next Instruction: {:02X}{:02X}", self.chip8.memory[self.chip8.program_counter as usize], self.chip8.memory[self.chip8.program_counter as usize + 1]));
+                ui.end_row();
             });
     }
 }
