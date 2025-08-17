@@ -18,6 +18,9 @@ targets = ["x86_64-unknown-linux-gnu", "wasm32-unknown-unknown"]
 # chip 8 specific
 chip8sys = { path = "../chip8sys/" }
 
+# audio
+rodio = "0.21.1"
+
 # egui
 egui = "0.32"
 eframe = { version = "0.32", default-features = false, features = [

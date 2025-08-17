@@ -2,6 +2,8 @@ use chip8sys::chip8::Chip8Sys;
 use chip8sys::chip8error::Chip8Error;
 use egui::{Color32, Key};
 use egui_extras::{Column, TableBuilder};
+use rodio::mixer::Mixer;
+use rodio::source::{SineWave, Source};
 
 // if we add new fields, give them default values when deserializing old state
 pub struct Chip8App {
@@ -10,10 +12,14 @@ pub struct Chip8App {
     background_color: Color32,
     pixel_color: Color32,
     key_map: [Key; 16],
+    sink: rodio::Sink,
 }
 
 impl Default for Chip8App {
     fn default() -> Self {
+        // Setup and Handle Sound
+        // let sink = rodio::Sink::connect_new(&stream_handle.mixer());
+
         Self {
             // Example stuff:
             chip8: Chip8Sys::new_chip_8(),
@@ -38,23 +44,26 @@ impl Default for Chip8App {
                 Key::F,
                 Key::V,
             ],
+            sink: rodio::Sink::new().0,
         }
     }
 }
 
 impl Chip8App {
     /// Called once before the first frame.
-    pub fn new(_cc: &eframe::CreationContext<'_>) -> Self {
+    pub fn new(_cc: &eframe::CreationContext<'_>, mixer: &Mixer) -> Self {
         // This is also where you can customize the look and feel of egui using
         // `cc.egui_ctx.set_visuals` and `cc.egui_ctx.set_fonts`.
         let mut result: Chip8App = Default::default();
+        result.sink = rodio::Sink::connect_new(mixer);
         // result.chip8.load_rom("roms/2-ibm-logo.ch8".to_string());
         // result.chip8.load_rom("roms/1-chip8-logo.ch8".to_string());
         // result.chip8.load_rom("roms/3-corax+.ch8".to_string());
         // result.chip8.load_rom("roms/5-quirks.ch8".to_string());
         // When running quirks rom hardcode this memory spot to auto run Chip-8
         // result.chip8.memory[0x1FF] = 1;
-        result.chip8.load_rom("roms/walking_man.ch8".to_string());
+        // result.chip8.load_rom("roms/walking_man.ch8".to_string());
+        result.chip8.load_rom("roms/7-beep.ch8".to_string());
         result
     }
     fn table(&mut self, ui: &mut egui::Ui) {
@@ -122,6 +131,13 @@ impl eframe::App for Chip8App {
                 self.chip8.keys[n] = i.key_pressed(*k);
             }
         });
+        // Handle Sound
+        if self.chip8.is_playing_sound {
+            self.sink.append(SineWave::new(440.0).repeat_infinite());
+        } else {
+            self.sink.stop();
+        }
+
         // TODO: Not sure how I want to handle all these yet...
         // maybe log them in their own window?
         match self.chip8.run() {

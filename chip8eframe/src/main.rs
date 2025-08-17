@@ -5,7 +5,8 @@
 #[cfg(not(target_arch = "wasm32"))]
 fn main() -> eframe::Result {
     env_logger::init(); // Log to stderr (if you run with `RUST_LOG=debug`).
-
+    let stream_handle =
+        rodio::OutputStreamBuilder::open_default_stream().expect("open default audio stream");
     let native_options = eframe::NativeOptions {
         viewport: egui::ViewportBuilder::default()
             .with_inner_size([400.0, 300.0])
@@ -20,7 +21,12 @@ fn main() -> eframe::Result {
     eframe::run_native(
         "Chip-8 Emulator",
         native_options,
-        Box::new(|cc| Ok(Box::new(chip8eframe::Chip8App::new(cc)))),
+        Box::new(|cc| {
+            Ok(Box::new(chip8eframe::Chip8App::new(
+                cc,
+                stream_handle.mixer(),
+            )))
+        }),
     )
 }
 
