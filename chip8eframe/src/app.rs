@@ -1,5 +1,7 @@
 use chip8sys::chip8::Chip8Sys;
 use chip8sys::chip8error::Chip8Error;
+use egui::special_emojis;
+use egui::text::LayoutJob;
 use egui::{Color32, Key};
 use egui_extras::{Column, TableBuilder};
 use rodio::mixer::Mixer;
@@ -13,6 +15,9 @@ pub struct Chip8App {
     pixel_color: Color32,
     key_map: [Key; 16],
     sink: rodio::Sink,
+    compute_info: ConfigWindow,
+    screen_config: ConfigWindow,
+    about: ConfigWindow,
 }
 
 impl Default for Chip8App {
@@ -45,6 +50,18 @@ impl Default for Chip8App {
                 Key::V,
             ],
             sink: rodio::Sink::new().0,
+            screen_config: ConfigWindow {
+                name: String::from("Screen Config"),
+                show: false,
+            },
+            compute_info: ConfigWindow {
+                name: String::from("Compute Info"),
+                show: false,
+            },
+            about: ConfigWindow {
+                name: String::from("About Chip-8"),
+                show: true,
+            },
         }
     }
 }
@@ -54,69 +71,23 @@ impl Chip8App {
     pub fn new(_cc: &eframe::CreationContext<'_>, mixer: &Mixer) -> Self {
         // This is also where you can customize the look and feel of egui using
         // `cc.egui_ctx.set_visuals` and `cc.egui_ctx.set_fonts`.
+
         let mut result: Chip8App = Default::default();
+
+        // Setup Sound
         result.sink = rodio::Sink::connect_new(mixer);
+
+        // Load Chip-8 Roms
         // result.chip8.load_rom("roms/2-ibm-logo.ch8".to_string());
         // result.chip8.load_rom("roms/1-chip8-logo.ch8".to_string());
         // result.chip8.load_rom("roms/3-corax+.ch8".to_string());
         // result.chip8.load_rom("roms/5-quirks.ch8".to_string());
         // When running quirks rom hardcode this memory spot to auto run Chip-8
         // result.chip8.memory[0x1FF] = 1;
-        // result.chip8.load_rom("roms/walking_man.ch8".to_string());
-        result.chip8.load_rom("roms/7-beep.ch8".to_string());
-        result
-    }
-    fn table(&mut self, ui: &mut egui::Ui) {
-        let available_height = ui.available_height();
-        let table = TableBuilder::new(ui)
-            .striped(true)
-            .resizable(true)
-            .cell_layout(egui::Layout::left_to_right(egui::Align::Center))
-            .column(Column::auto())
-            .column(Column::auto())
-            .column(Column::auto())
-            .column(Column::auto())
-            .min_scrolled_height(0.0)
-            .max_scroll_height(available_height);
-        // table = table.sense(egui::Sense::click());
+        result.chip8.load_rom("roms/walking_man.ch8".to_string());
+        // result.chip8.load_rom("roms/7-beep.ch8".to_string());
 
-        table
-            .header(20.0, |mut header| {
-                header.col(|ui| {
-                    ui.strong("Index");
-                });
-                header.col(|ui| {
-                    ui.strong("Register");
-                });
-                header.col(|ui| {
-                    ui.strong("Stack");
-                });
-                header.col(|ui| {
-                    ui.strong("Keys");
-                });
-            })
-            .body(|mut body| {
-                for row_index in 0..self.chip8.register.len() {
-                    body.row(30.0, |mut row| {
-                        row.col(|ui| {
-                            ui.label(format!("{:X}", row_index));
-                        });
-                        row.col(|ui| {
-                            ui.label(format!("{:02X}", self.chip8.register[row_index]));
-                        });
-                        row.col(|ui| {
-                            ui.label(format!("{:04X}", self.chip8.stack[row_index]));
-                        });
-                        row.col(|ui| {
-                            if self.chip8.keys[row_index] {
-                                ui.label("Pressed");
-                            } else {
-                                ui.label("");
-                            }
-                        });
-                    });
-                }
-            });
+        result
     }
 }
 
@@ -157,25 +128,6 @@ impl eframe::App for Chip8App {
                 Chip8Error::InvalidWaitRegister(_) => (),
             },
         }
-
-        egui::TopBottomPanel::top("top_panel").show(ctx, |ui| {
-            // The top panel is often a good place for a menu bar:
-
-            egui::MenuBar::new().ui(ui, |ui| {
-                // NOTE: no File->Quit on web pages!
-                let is_web = cfg!(target_arch = "wasm32");
-                if !is_web {
-                    ui.menu_button("File", |ui| {
-                        if ui.button("Quit").clicked() {
-                            ctx.send_viewport_cmd(egui::ViewportCommand::Close);
-                        }
-                    });
-                    ui.add_space(16.0);
-                }
-
-                egui::widgets::global_theme_preference_buttons(ui);
-            });
-        });
 
         egui::CentralPanel::default().show(ctx, |ui| {
             ui.heading("Chip-8 Display".to_string());
@@ -227,32 +179,136 @@ impl eframe::App for Chip8App {
             ctx.request_repaint();
         });
 
-        egui::Window::new("Compute Info").show(ctx, |ui| {
-            ctx.set_pixels_per_point(2.0);
-            egui::ScrollArea::vertical().show(ui, |ui| {
-                // The central panel the region left after adding TopPanel's and SidePanel's
-                ui.horizontal(|ui| {
-                    ui.label(format!("Program Counter: {}", &self.chip8.program_counter));
-                });
-                ui.horizontal(|ui| {
-                    ui.label(format!("Register I: {}", &self.chip8.register_i));
-                });
-                ui.horizontal(|ui| {
-                    ui.label(format!("Stack Pointer: {}", &self.chip8.stack_pointer));
-                });
+        egui::SidePanel::right("Config Toggle").show(ctx, |ui| {
+            ui.heading("Chip-8 Toolbox");
+            ui.separator();
+            ui.toggle_value(&mut self.about.show, self.about.name.clone());
+            ui.toggle_value(&mut self.compute_info.show, self.compute_info.name.clone());
+            ui.toggle_value(
+                &mut self.screen_config.show,
+                self.screen_config.name.clone(),
+            );
+            let is_web = cfg!(target_arch = "wasm32");
+            if !is_web {
+                if ui.button("Quit").clicked() {
+                    ctx.send_viewport_cmd(egui::ViewportCommand::Close);
+                }
+            }
+        });
 
-                ui.separator();
-                self.table(ui);
-                ui.separator();
+        egui::Window::new(self.compute_info.name.clone())
+            .open(&mut self.compute_info.show)
+            .show(ctx, |ui| {
+                ctx.set_pixels_per_point(2.0);
+                egui::ScrollArea::vertical().show(ui, |ui| {
+                    // The central panel the region left after adding TopPanel's and SidePanel's
+                    ui.horizontal(|ui| {
+                        ui.label(format!("Program Counter: {}", &self.chip8.program_counter));
+                    });
+                    ui.horizontal(|ui| {
+                        ui.label(format!("Register I: {}", &self.chip8.register_i));
+                    });
+                    ui.horizontal(|ui| {
+                        ui.label(format!("Stack Pointer: {}", &self.chip8.stack_pointer));
+                    });
+                    ui.separator();
+                    let available_height = ui.available_height();
+                    let table = TableBuilder::new(ui)
+                        .striped(true)
+                        .resizable(true)
+                        .cell_layout(egui::Layout::left_to_right(egui::Align::Center))
+                        .column(Column::auto())
+                        .column(Column::auto())
+                        .column(Column::auto())
+                        .column(Column::auto())
+                        .min_scrolled_height(0.0)
+                        .max_scroll_height(available_height);
+                    // table = table.sense(egui::Sense::click());
+
+                    table
+                        .header(20.0, |mut header| {
+                            header.col(|ui| {
+                                ui.strong("Index");
+                            });
+                            header.col(|ui| {
+                                ui.strong("Register");
+                            });
+                            header.col(|ui| {
+                                ui.strong("Stack");
+                            });
+                            header.col(|ui| {
+                                ui.strong("Keys");
+                            });
+                        })
+                        .body(|mut body| {
+                            for row_index in 0..self.chip8.register.len() {
+                                body.row(30.0, |mut row| {
+                                    row.col(|ui| {
+                                        ui.label(format!("{:X}", row_index));
+                                    });
+                                    row.col(|ui| {
+                                        ui.label(format!("{:02X}", self.chip8.register[row_index]));
+                                    });
+                                    row.col(|ui| {
+                                        ui.label(format!("{:04X}", self.chip8.stack[row_index]));
+                                    });
+                                    row.col(|ui| {
+                                        if self.chip8.keys[row_index] {
+                                            ui.label("Pressed");
+                                        } else {
+                                            ui.label("");
+                                        }
+                                    });
+                                });
+                            }
+                        });
+                    // self.table(ui);
+                    ui.separator();
+                });
             });
-        });
-        egui::Window::new("Screen Config").show(ctx, |ui| {
-            ctx.set_pixels_per_point(2.0);
-            ui.add(egui::Slider::new(&mut self.zoom, 0.0..=25.0).text("Zoom: "));
-            ui.label("Pixel: ");
-            ui.color_edit_button_srgba(&mut self.pixel_color);
-            ui.label("Background: ");
-            ui.color_edit_button_srgba(&mut self.background_color);
-        });
+        egui::Window::new(self.screen_config.name.clone())
+            .open(&mut self.screen_config.show)
+            .show(ctx, |ui| {
+                ctx.set_pixels_per_point(2.0);
+                ui.add(egui::Slider::new(&mut self.zoom, 0.0..=25.0).text("Zoom: "));
+                ui.label("Pixel: ");
+                ui.color_edit_button_srgba(&mut self.pixel_color);
+                ui.label("Background: ");
+                ui.color_edit_button_srgba(&mut self.background_color);
+                egui::widgets::global_theme_preference_buttons(ui);
+            });
+
+        egui::Window::new(self.about.name.clone())
+            .open(&mut self.about.show)
+            .show(ctx, |ui| {
+                ui.heading("Chip-8 Emulator");
+                ui.label("By Nicholas Licalsi");
+                ui.separator();
+                egui::ScrollArea::vertical()
+                    .auto_shrink(true)
+                    .show(ui, |ui| {
+                        let mut job = LayoutJob::single_section(
+                            crate::about::About::about(),
+                            egui::TextFormat {
+                                ..Default::default()
+                            },
+                        );
+                        job.wrap = egui::text::TextWrapping {
+                            max_rows: 10,
+                            ..Default::default()
+                        };
+
+                        // NOTE: `Label` overrides some of the wrapping settings, e.g. wrap width
+                        ui.label(job);
+                    });
+                ui.separator();
+                ui.label(format!("{} Source Code", special_emojis::GITHUB));
+                ui.hyperlink("https://github.com/licalsinj/chip-8");
+            });
     }
+}
+
+struct ConfigWindow {
+    name: String,
+    show: bool,
 }

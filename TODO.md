@@ -22,6 +22,7 @@ Ordered by how likely they are to be done (or be able to be fixed).
 - [x] Display Inside Registers & such
 - [x] Get sound to work
 - [x] Get Button Input to work
+- [x] Show/Hide Config Windows
 - [ ] Get config windows to show/hide
   - I think I should do this in a left pane like egui demo
 - [ ] Run, Pause, Step Buttons
