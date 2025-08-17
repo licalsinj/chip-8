@@ -1,6 +1,6 @@
 use chip8sys::chip8::Chip8Sys;
 use chip8sys::chip8error::Chip8Error;
-use egui::Color32;
+use egui::{Color32, Key};
 use egui_extras::{Column, TableBuilder};
 
 // if we add new fields, give them default values when deserializing old state
@@ -9,6 +9,7 @@ pub struct Chip8App {
     zoom: f32,
     background_color: Color32,
     pixel_color: Color32,
+    key_map: [Key; 16],
 }
 
 impl Default for Chip8App {
@@ -19,6 +20,24 @@ impl Default for Chip8App {
             zoom: 20.0,
             background_color: Color32::BLACK,
             pixel_color: Color32::GREEN,
+            key_map: [
+                Key::X,
+                Key::Num1,
+                Key::Num2,
+                Key::Num3,
+                Key::Q,
+                Key::W,
+                Key::E,
+                Key::A,
+                Key::S,
+                Key::D,
+                Key::Z,
+                Key::C,
+                Key::Num4,
+                Key::R,
+                Key::F,
+                Key::V,
+            ],
         }
     }
 }
@@ -71,7 +90,7 @@ impl Chip8App {
                 for row_index in 0..self.chip8.register.len() {
                     body.row(30.0, |mut row| {
                         row.col(|ui| {
-                            ui.label(format!("{}", row_index));
+                            ui.label(format!("{:X}", row_index));
                         });
                         row.col(|ui| {
                             ui.label(format!("{:02X}", self.chip8.register[row_index]));
@@ -95,8 +114,14 @@ impl Chip8App {
 impl eframe::App for Chip8App {
     /// Called each time the UI needs repainting, which may be many times per second.
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
-        // Put your widgets into a `SidePanel`, `TopBottomPanel`, `CentralPanel`, `Window` or `Area`.
-        // For inspiration and more examples, go to https://emilk.github.io/egui
+        // Scan the keys and if they're pressed tell the Chip-8
+        // I think I'm missing an edge case quirk thing where chip-8 only acts if a key is released
+        // But that might be beyond my scope of interest for this project
+        ctx.input(|i| {
+            for (n, k) in self.key_map.iter().enumerate() {
+                self.chip8.keys[n] = i.key_pressed(*k);
+            }
+        });
         // TODO: Not sure how I want to handle all these yet...
         // maybe log them in their own window?
         match self.chip8.run() {
