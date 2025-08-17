@@ -13,15 +13,17 @@ Ordered by how likely they are to be done (or be able to be fixed).
   - Looking at the code this seems to use the delay timer to keep flashing down
   - And my delay timer is off so it's constantly redrawing.
 - [ ] Get Controls to be more responsive
-  - Watching it through eframe it's like the chip8sys library is overwriting 
+  - Watching it through eframe it's like the chip8sys library is overwriting
       what I'm sending it it at first.
 
   ### egui Presenter
 
 - [x] Get Screen to Appear
 - [x] Display Inside Registers & such
-- [ ] Get sound to work
+- [x] Get sound to work
 - [x] Get Button Input to work
+- [ ] Get config windows to show/hide
+  - I think I should do this in a left pane like egui demo
 - [ ] Run, Pause, Step Buttons
 - [ ] Configure Quirks
 - [ ] Dynamically Upload Rom
