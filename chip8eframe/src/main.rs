@@ -18,7 +18,7 @@ fn main() -> eframe::Result {
         ..Default::default()
     };
     eframe::run_native(
-        "eframe template",
+        "Chip-8 Emulator",
         native_options,
         Box::new(|cc| Ok(Box::new(chip8eframe::Chip8App::new(cc)))),
     )

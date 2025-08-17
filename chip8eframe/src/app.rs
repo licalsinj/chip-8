@@ -1,25 +1,24 @@
 use chip8sys::chip8::Chip8Sys;
 use chip8sys::chip8error::Chip8Error;
 use egui::Color32;
+use egui_extras::{Column, TableBuilder};
 
 // if we add new fields, give them default values when deserializing old state
 pub struct Chip8App {
-    // Example stuff:
-    label: String,
-    value: f32,
-
-    // Actual Chip 8 Implementation
-    // #[serde(skip)] // This how you opt-out of serialization of a field
     chip8: Chip8Sys,
+    zoom: f32,
+    background_color: Color32,
+    pixel_color: Color32,
 }
 
 impl Default for Chip8App {
     fn default() -> Self {
         Self {
             // Example stuff:
-            label: "Hello World!".to_owned(),
-            value: 2.7,
             chip8: Chip8Sys::new_chip_8(),
+            zoom: 20.0,
+            background_color: Color32::BLACK,
+            pixel_color: Color32::GREEN,
         }
     }
 }
@@ -39,6 +38,58 @@ impl Chip8App {
         result.chip8.load_rom("roms/walking_man.ch8".to_string());
         result
     }
+    fn table(&mut self, ui: &mut egui::Ui) {
+        let available_height = ui.available_height();
+        let table = TableBuilder::new(ui)
+            .striped(true)
+            .resizable(true)
+            .cell_layout(egui::Layout::left_to_right(egui::Align::Center))
+            .column(Column::auto())
+            .column(Column::auto())
+            .column(Column::auto())
+            .column(Column::auto())
+            .min_scrolled_height(0.0)
+            .max_scroll_height(available_height);
+        // table = table.sense(egui::Sense::click());
+
+        table
+            .header(20.0, |mut header| {
+                header.col(|ui| {
+                    ui.strong("Index");
+                });
+                header.col(|ui| {
+                    ui.strong("Register");
+                });
+                header.col(|ui| {
+                    ui.strong("Stack");
+                });
+                header.col(|ui| {
+                    ui.strong("Keys");
+                });
+            })
+            .body(|mut body| {
+                for row_index in 0..self.chip8.register.len() {
+                    body.row(30.0, |mut row| {
+                        row.col(|ui| {
+                            ui.label(format!("{}", row_index));
+                        });
+                        row.col(|ui| {
+                            ui.label(format!("{:02X}", self.chip8.register[row_index]));
+                        });
+                        row.col(|ui| {
+                            ui.label(format!("{:04X}", self.chip8.stack[row_index]));
+                        });
+                        row.col(|ui| {
+                            if self.chip8.keys[row_index] {
+                                ui.label("Pressed");
+                            } else {
+                                ui.label("");
+                            }
+                        });
+                    });
+                }
+            });
+    }
 }
 
 impl eframe::App for Chip8App {
@@ -47,6 +98,7 @@ impl eframe::App for Chip8App {
         // Put your widgets into a `SidePanel`, `TopBottomPanel`, `CentralPanel`, `Window` or `Area`.
         // For inspiration and more examples, go to https://emilk.github.io/egui
         // TODO: Not sure how I want to handle all these yet...
+        // maybe log them in their own window?
         match self.chip8.run() {
             Ok(_) => (),
             Err(e) => match e {
@@ -88,18 +140,7 @@ impl eframe::App for Chip8App {
             ui.heading("Chip-8 Display".to_string());
             let painter = ui.painter();
 
-            /*
-            painter.rect_filled(
-                egui::Rect {
-                    min: egui::Pos2 { x: 25.0, y: 50.0 },
-                    max: egui::Pos2 { x: 50.0, y: 75.0 },
-                },
-                0,
-                Color32::BLUE,
-            );
-            */
-
-            let width = 10.0;
+            let width = self.zoom;
             let mut row = 0.0;
             let mut col = 0.0;
             let x_off = 50.0;
@@ -121,9 +162,9 @@ impl eframe::App for Chip8App {
                     let y_start = y_off + row;
                     let color: Color32;
                     if cell {
-                        color = Color32::GREEN;
+                        color = self.pixel_color;
                     } else {
-                        color = Color32::BLACK;
+                        color = self.background_color;
                     };
                     painter.rect_filled(
                         egui::Rect {
@@ -145,30 +186,32 @@ impl eframe::App for Chip8App {
             ctx.request_repaint();
         });
 
-        egui::SidePanel::right("Register Info").show(ctx, |ui| {
-            // The central panel the region left after adding TopPanel's and SidePanel's
-            ui.heading("eframe template");
+        egui::Window::new("Compute Info").show(ctx, |ui| {
+            ctx.set_pixels_per_point(2.0);
+            egui::ScrollArea::vertical().show(ui, |ui| {
+                // The central panel the region left after adding TopPanel's and SidePanel's
+                ui.horizontal(|ui| {
+                    ui.label(format!("Program Counter: {}", &self.chip8.program_counter));
+                });
+                ui.horizontal(|ui| {
+                    ui.label(format!("Register I: {}", &self.chip8.register_i));
+                });
+                ui.horizontal(|ui| {
+                    ui.label(format!("Stack Pointer: {}", &self.chip8.stack_pointer));
+                });
 
-            ui.horizontal(|ui| {
-                ui.label("Write something: ");
-                ui.text_edit_singleline(&mut self.label);
+                ui.separator();
+                self.table(ui);
+                ui.separator();
             });
-
-            ui.add(egui::Slider::new(&mut self.value, 0.0..=10.0).text("value"));
-            if ui.button("Increment").clicked() {
-                self.value += 1.0;
-            }
-
-            ui.separator();
-            ui.horizontal(|ui| {
-                ui.label(format!("Program Counter: {}", &self.chip8.program_counter));
-            });
-            ui.horizontal(|ui| {
-                ui.label(format!("Register I: {}", &self.chip8.register_i));
-            });
-            for n in 0..0xF {
-                ui.label(format!("Register {}: {}", n, &self.chip8.register[n]));
-            }
+        });
+        egui::Window::new("Screen Config").show(ctx, |ui| {
+            ctx.set_pixels_per_point(2.0);
+            ui.add(egui::Slider::new(&mut self.zoom, 0.0..=25.0).text("Zoom: "));
+            ui.label("Pixel: ");
+            ui.color_edit_button_srgba(&mut self.pixel_color);
+            ui.label("Background: ");
+            ui.color_edit_button_srgba(&mut self.background_color);
         });
     }
 }

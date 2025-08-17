@@ -17,7 +17,7 @@ Ordered by how likely they are to be done (or be able to be fixed).
   ### egui Presenter
 
 - [x] Get Screen to Appear
-- [ ] Display Inside Registers & such
+- [x] Display Inside Registers & such
 - [ ] Get sound to work
 - [ ] Get Button Input to work
 - [ ] Run, Pause, Step Buttons
@@ -29,9 +29,9 @@ Ordered by how likely they are to be done (or be able to be fixed).
 
 #### Stretch Goals
 
-- [ ] Get Screen to Dynamically Scale
+- [x] Get Screen to Dynamically Scale
 - [ ] Make Sound Frequency Configurable
-- [ ] Make Pixel Color Configurable
+- [x] Make Pixel Color Configurable
 - [ ] Export Save States
 - [ ] Make Keyboard keys Configurable
 

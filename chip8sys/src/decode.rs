@@ -260,7 +260,6 @@ impl Chip8Sys {
             }
 
             0xF => {
-                print!("Hit 0xF");
                 match Chip8Sys::nn(c, d) {
                     0x07 => {
                         // println!(" - Load reg[x] with delay timer");
