@@ -7,6 +7,8 @@ use egui_extras::{Column, TableBuilder};
 use rodio::mixer::Mixer;
 use rodio::source::{SineWave, Source};
 
+use crate::about::About;
+
 // if we add new fields, give them default values when deserializing old state
 pub struct Chip8App {
     chip8: Chip8Sys,
@@ -21,6 +23,7 @@ pub struct Chip8App {
     control_flow: ConfigWindow,
     run: bool,
     single_step: bool,
+    rom_path: String,
 }
 
 impl Default for Chip8App {
@@ -70,8 +73,9 @@ impl Default for Chip8App {
                 name: String::from("Control Flow"),
                 show: true,
             },
-            run: true,
+            run: false,
             single_step: false,
+            rom_path: String::new(),
         }
     }
 }
@@ -89,14 +93,15 @@ impl Chip8App {
 
         // Load Chip-8 Roms
         // result.chip8.load_rom("roms/2-ibm-logo.ch8".to_string());
-        // result.chip8.load_rom("roms/1-chip8-logo.ch8".to_string());
+        result.rom_path = "roms/1-chip8-logo.ch8".to_string();
         // result.chip8.load_rom("roms/3-corax+.ch8".to_string());
         // result.chip8.load_rom("roms/5-quirks.ch8".to_string());
         // When running quirks rom hardcode this memory spot to auto run Chip-8
         // result.chip8.memory[0x1FF] = 1;
-        result.chip8.load_rom("roms/walking_man.ch8".to_string());
+        // result.chip8.load_rom("roms/walking_man.ch8".to_string());
         // result.chip8.load_rom("roms/7-beep.ch8".to_string());
 
+        result.chip8.load_rom(&result.rom_path);
         result
     }
 }
@@ -104,6 +109,7 @@ impl Chip8App {
 impl eframe::App for Chip8App {
     /// Called each time the UI needs repainting, which may be many times per second.
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
+        // If we're restarting the chip-8 then reinitialize it with quirks
         // Scan the keys and if they're pressed tell the Chip-8
         // I think I'm missing an edge case quirk thing where chip-8 only acts if a key is released
         // But that might be beyond my scope of interest for this project
@@ -112,6 +118,7 @@ impl eframe::App for Chip8App {
                 self.chip8.keys[n] = i.key_pressed(*k);
             }
         });
+
         // Handle Sound
         if self.chip8.is_playing_sound {
             self.sink.append(SineWave::new(440.0).repeat_infinite());
@@ -247,10 +254,10 @@ impl eframe::App for Chip8App {
                                 ui.strong("Index");
                             });
                             header.col(|ui| {
-                                ui.strong("Register");
+                                ui.strong("Register Value");
                             });
                             header.col(|ui| {
-                                ui.strong("Stack");
+                                ui.strong("Stack Value");
                             });
                             header.col(|ui| {
                                 ui.strong("Keys");
@@ -260,13 +267,16 @@ impl eframe::App for Chip8App {
                             for row_index in 0..self.chip8.register.len() {
                                 body.row(30.0, |mut row| {
                                     row.col(|ui| {
-                                        ui.label(format!("{:X}", row_index));
+                                        ui.label(format!("0x{:X}", row_index));
                                     });
                                     row.col(|ui| {
-                                        ui.label(format!("{:02X}", self.chip8.register[row_index]));
+                                        ui.label(format!(
+                                            "0x{:02X}",
+                                            self.chip8.register[row_index]
+                                        ));
                                     });
                                     row.col(|ui| {
-                                        ui.label(format!("{:04X}", self.chip8.stack[row_index]));
+                                        ui.label(format!("0x{:04X}", self.chip8.stack[row_index]));
                                     });
                                     row.col(|ui| {
                                         if self.chip8.keys[row_index] {
@@ -327,16 +337,36 @@ impl eframe::App for Chip8App {
                 ui.heading("Chip-8 Control Flow");
                 ui.label("Pause or run the emulator. When paused you can use Single Step to walk through one command at a time.");
                 ui.separator();
-                let state = if self.run { "Pause" } else { "Run" };
-                ui.toggle_value(&mut self.run, state);
-                if ui.add_enabled(!self.run, egui::Button::new("Single Step")).clicked() {
-                    self.single_step = true;
-                }
-                ui.end_row();
-                ui.label(format!("Program Counter: {:04X}", self.chip8.program_counter));
-                ui.label(format!("Previous Instruction: {:02X}{:02X}", self.chip8.memory[self.chip8.program_counter as usize - 2], self.chip8.memory[self.chip8.program_counter as usize - 1]));
-                ui.label(format!("Next Instruction: {:02X}{:02X}", self.chip8.memory[self.chip8.program_counter as usize], self.chip8.memory[self.chip8.program_counter as usize + 1]));
-                ui.end_row();
+                egui::Grid::new("control_flow_controls").show(ui,|ui|{
+                    let state = if self.run { "Pause" } else { "Run" };
+                    ui.toggle_value(&mut self.run, state);
+                    if ui.add_enabled(!self.run, egui::Button::new("Single Step")).clicked() {
+                        self.single_step = true;
+                    }
+                    if ui.button("Restart").clicked() {
+                        // TODO: Take into account quirks
+                        self.chip8 = Chip8Sys::new_chip_8();
+                        self.chip8.load_rom(&self.rom_path);
+                    }
+                    ui.end_row();
+                });
+                ui.separator();
+                egui::Grid::new("instruction_output").show(ui, |ui| {
+                    ui.label(format!("Program Counter: 0x{:04X}", self.chip8.program_counter));
+                    ui.end_row();
+
+                    let prev_instruction_high = self.chip8.memory[self.chip8.program_counter as usize - 2];
+                    let prev_instruction_low = self.chip8.memory[self.chip8.program_counter as usize - 1];
+                    ui.label(format!("Previous Instruction: 0x{:02X}{:02X}", prev_instruction_high, prev_instruction_low));
+                    ui.label(About::chip_8_decode(prev_instruction_high, prev_instruction_low));
+                    ui.end_row();
+
+                    let next_instruction_high = self.chip8.memory[self.chip8.program_counter as usize];
+                    let next_instruction_low = self.chip8.memory[self.chip8.program_counter as usize + 1];
+                    ui.label(format!("Next Instruction: 0x{:02X}{:02X}", next_instruction_high, next_instruction_low));
+                    ui.label(About::chip_8_decode(next_instruction_high,next_instruction_low));
+                    ui.end_row();
+                });
             });
     }
 }

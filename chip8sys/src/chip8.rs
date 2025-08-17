@@ -1,5 +1,4 @@
 use core::panic;
-use std::env;
 use std::fs::File;
 use std::io::Read;
 
@@ -170,9 +169,9 @@ impl Chip8Sys {
         }
     }
     // */
-    pub fn load_rom(&mut self, file_path: String) -> &mut Self {
-        let path = env::current_dir().unwrap();
-        println!("Path is: {}", path.display());
+    pub fn load_rom(&mut self, file_path: &str) -> &mut Self {
+        // let path = env::current_dir().unwrap();
+        // println!("Path is: {}", path.display());
         let mut file = File::open(file_path).expect("should have been able to open the file");
         let mut rom = [0; 0x1000];
         file.read(&mut rom[..])
@@ -243,7 +242,7 @@ mod test {
     fn run_corax_plus_test_rom() {
         let mut chip8 = Chip8Sys::new_chip_8();
         let file_path = "../roms/3-corax+.ch8";
-        chip8.load_rom(String::from(file_path));
+        chip8.load_rom(file_path);
 
         let pass_fb: [u8; 256] = [
             0, 0, 0, 0, 0, 0, 0, 0, 58, 128, 58, 128, 58, 128, 59, 128, 25, 20, 9, 20, 59, 148, 35,
@@ -272,7 +271,7 @@ mod test {
     fn run_flags_test_rom() {
         let mut chip8 = Chip8Sys::new_chip_8();
         let file_path = "../roms/4-flags.ch8";
-        chip8.load_rom(String::from(file_path));
+        chip8.load_rom(file_path);
         chip8.memory[0x1FF] = 1;
 
         // This has "disp. wait slow x" in the output
@@ -305,7 +304,7 @@ mod test {
     fn run_quirks_test_rom() {
         let mut chip8 = Chip8Sys::new_chip_8();
         let file_path = "../roms/5-quirks.ch8";
-        chip8.load_rom(String::from(file_path));
+        chip8.load_rom(file_path);
         chip8.memory[0x1FF] = 1;
 
         // This has "disp. wait slow x" in the output

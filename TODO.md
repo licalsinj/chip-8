@@ -16,6 +16,10 @@ Ordered by how likely they are to be done (or be able to be fixed).
   - Watching it through eframe it's like the chip8sys library is overwriting
       what I'm sending it it at first.
 - [ ] Get Serde working for Chip8Sys
+- [ ] Move the About::chip_8_decode into the Chip8Sys library
+  - and take into account current quirks.
+  - Could be good to have a global command lookup impl without &self
+  - And one impl with &self taking into account quirks
 
   ### egui Presenter
 
@@ -27,12 +31,22 @@ Ordered by how likely they are to be done (or be able to be fixed).
 - [x] Get config windows to show/hide
   - I think I should do this in a left pane like egui demo
 - [x] Run, Pause, Step Buttons
+- [x] Restart Button
 - [ ] Configure Quirks
 - [ ] Dynamically Upload Rom
   - [ ] Roms from Memory
   - [ ] Roms from User
 - [ ] Compile to WASM for Demo
 - [ ] Implement Serde
+
+#### About Page
+
+Info that I need on the about page:
+
+- [ ] What is the chip-8
+- [ ] How to load a new rom
+- [ ] How to control the Chip-8
+- [ ] Where to learn more about me
 
 #### Stretch Goals
 
@@ -42,6 +56,8 @@ Ordered by how likely they are to be done (or be able to be fixed).
 - [ ] Export Save States
 - [ ] Make Keyboard keys Configurable
 - [ ] Build a lookup table for commands to print on Control Flow Window
+- [ ] Control flow: "Previous command" is not the previous command executed
+  - It's actually the previous command in memory
 
 ## Completed
 
