@@ -1,7 +1,7 @@
 #![crate_name = "chip8sys"]
 #![crate_type = "lib"]
 
-extern crate rand;
+extern crate getrandom;
 
 pub mod chip8;
 pub mod chip8error;

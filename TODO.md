@@ -8,6 +8,10 @@ Ordered by how likely they are to be done (or be able to be fixed).
 
 - [x] Convert this to a library instead of a binary
 - [x] Have Chip8Sys::run() return Result<(),Err>
+- [ ] Improve error codes
+  - Invalid first byte
+  - Invalid op code
+  - Maybe even imbbed a String explaination...
 - [ ] Implement delay and sound timer on their own threads?
 - [ ] Fix Flashing from Clear Screen actions
   - Looking at the code this seems to use the delay timer to keep flashing down
@@ -36,7 +40,8 @@ Ordered by how likely they are to be done (or be able to be fixed).
 - [ ] Dynamically Upload Rom
   - [ ] Roms from Memory
   - [ ] Roms from User
-- [ ] Compile to WASM for Demo
+- [x] Compile to WASM for Demo
+- [ ] Implement Sound in WASM
 - [ ] Implement Serde
 
 #### About Page

@@ -1,5 +1,9 @@
 #![warn(clippy::all, rust_2018_idioms)]
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")] // hide console window on Windows in release
+//
+
+extern crate console_error_panic_hook;
+use std::panic;
 
 // When compiling natively:
 #[cfg(not(target_arch = "wasm32"))]
@@ -33,7 +37,16 @@ fn main() -> eframe::Result {
 // When compiling to web using trunk:
 #[cfg(target_arch = "wasm32")]
 fn main() {
+    panic::set_hook(Box::new(console_error_panic_hook::hook));
     use eframe::wasm_bindgen::JsCast as _;
+
+    // let _stream_handle: rodio::OutputStream =
+    //      rodio::OutputStreamBuilder::open_default_stream().expect("open default audio stream");
+    /* let stream_handle: rodio::OutputStream = rodio::OutputStreamBuilder::from_default_device()
+        .expect("should find default device")
+        .open_stream()
+        .expect("Should open default audio stream");
+    // */
 
     // Redirect `log` message to `console.log` and friends:
     eframe::WebLogger::init(log::LevelFilter::Debug).ok();
@@ -56,7 +69,16 @@ fn main() {
             .start(
                 canvas,
                 web_options,
-                Box::new(|cc| Ok(Box::new(eframe_template::Chip8App::new(cc)))),
+                Box::new(|cc| {
+                    Ok(Box::new(chip8eframe::Chip8App::new(
+                        cc,
+                        rodio::OutputStreamBuilder::from_default_device()
+                            .expect("should find default device")
+                            .open_stream()
+                            .expect("Should open default audio stream")
+                            .mixer(),
+                    )))
+                }),
             )
             .await;
 
