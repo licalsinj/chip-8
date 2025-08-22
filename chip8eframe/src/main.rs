@@ -28,7 +28,7 @@ fn main() -> eframe::Result {
         Box::new(|cc| {
             Ok(Box::new(chip8eframe::Chip8App::new(
                 cc,
-                stream_handle.mixer(),
+                Ok(stream_handle.mixer()),
             )))
         }),
     )
@@ -72,11 +72,14 @@ fn main() {
                 Box::new(|cc| {
                     Ok(Box::new(chip8eframe::Chip8App::new(
                         cc,
+                        Err("No Mixer".to_string()),
+                        /*
                         rodio::OutputStreamBuilder::from_default_device()
                             .expect("should find default device")
                             .open_stream()
                             .expect("Should open default audio stream")
                             .mixer(),
+                        */
                     )))
                 }),
             )

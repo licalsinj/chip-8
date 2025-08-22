@@ -82,14 +82,19 @@ impl Default for Chip8App {
 
 impl Chip8App {
     /// Called once before the first frame.
-    pub fn new(_cc: &eframe::CreationContext<'_>, mixer: &Mixer) -> Self {
+    pub fn new(_cc: &eframe::CreationContext<'_>, mixer: Result<&Mixer, String>) -> Self {
         // This is also where you can customize the look and feel of egui using
         // `cc.egui_ctx.set_visuals` and `cc.egui_ctx.set_fonts`.
 
         let mut result: Chip8App = Default::default();
 
         // Setup Sound
-        result.sink = rodio::Sink::connect_new(mixer);
+        // If I send a mixer in use it, otherwise ignore it
+        // NOTE: WILL Cause problems if someone requests sound via chip8 and it's not there.
+        match mixer {
+            Ok(m) => result.sink = rodio::Sink::connect_new(m),
+            Err(_) => (),
+        }
 
         // Load Chip-8 Roms
         // result.rom_path = "roms/1-chip8-logo.ch8".to_string();

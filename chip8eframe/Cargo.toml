@@ -12,7 +12,7 @@ path = "src/main.rs"
 
 [package.metadata.docs.rs]
 all-features = true
-targets = ["x86_64-unknown-linux-gnu", "wasm32-wasip1"]
+targets = ["x86_64-unknown-linux-gnu", "wasm32-unknown-unknown"]
 
 [dependencies]
 # chip 8 specific
@@ -20,7 +20,6 @@ chip8sys = { path = "../chip8sys/" }
 
 # audio
 rodio = "0.21.1"
-cpal = { version = "0.16", features = ["wasm-bindgen"] }
 
 # wasm debug
 console_error_panic_hook = "*"

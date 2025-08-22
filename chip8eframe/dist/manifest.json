@@ -1,6 +1,6 @@
 {
-  "name": "Chip-8 Emulator",
-  "short_name": "chip-8-emu",
+  "name": "egui Template PWA",
+  "short_name": "egui-template-pwa",
   "icons": [
     {
       "src": "./assets/icon-256.png",
