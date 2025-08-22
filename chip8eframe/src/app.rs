@@ -82,26 +82,41 @@ impl Default for Chip8App {
 
 impl Chip8App {
     /// Called once before the first frame.
-    pub fn new(_cc: &eframe::CreationContext<'_>, mixer: &Mixer) -> Self {
+    pub fn new(_cc: &eframe::CreationContext<'_>, mixer: Result<&Mixer, String>) -> Self {
         // This is also where you can customize the look and feel of egui using
         // `cc.egui_ctx.set_visuals` and `cc.egui_ctx.set_fonts`.
 
         let mut result: Chip8App = Default::default();
 
         // Setup Sound
-        result.sink = rodio::Sink::connect_new(mixer);
+        // If I send a mixer in use it, otherwise ignore it
+        // NOTE: WILL Cause problems if someone requests sound via chip8 and it's not there.
+        match mixer {
+            Ok(m) => result.sink = rodio::Sink::connect_new(m),
+            Err(_) => (),
+        }
 
         // Load Chip-8 Roms
+        // result.rom_path = "roms/1-chip8-logo.ch8".to_string();
         // result.chip8.load_rom("roms/2-ibm-logo.ch8".to_string());
-        result.rom_path = "roms/1-chip8-logo.ch8".to_string();
         // result.chip8.load_rom("roms/3-corax+.ch8".to_string());
         // result.chip8.load_rom("roms/5-quirks.ch8".to_string());
         // When running quirks rom hardcode this memory spot to auto run Chip-8
         // result.chip8.memory[0x1FF] = 1;
         // result.chip8.load_rom("roms/walking_man.ch8".to_string());
-        // result.chip8.load_rom("roms/7-beep.ch8".to_string());
+        // result.rom_path = "../roms/7-beep.ch8".to_string();
 
-        result.chip8.load_rom(&result.rom_path);
+        // result.chip8.load_rom(&result.rom_path);
+        result.chip8.load_chip8_logo();
+        // result.chip8.load_sound_test();
+        //
+
+        /*
+        println!("chip8-logo");
+        println!("");
+        println!("{:?}", result.chip8.memory);
+        println!("");
+        // */
         result
     }
 }
@@ -144,6 +159,7 @@ impl eframe::App for Chip8App {
                     Chip8Error::Invalid0xFNNN(_, _) => (),
                     // If the register we're waiting for is somehow > 0xF
                     Chip8Error::InvalidWaitRegister(_) => (),
+                    Chip8Error::IssueGeneratingRandomNum(_) => (),
                 },
             }
             if self.single_step {
@@ -346,7 +362,10 @@ impl eframe::App for Chip8App {
                     if ui.button("Restart").clicked() {
                         // TODO: Take into account quirks
                         self.chip8 = Chip8Sys::new_chip_8();
-                        self.chip8.load_rom(&self.rom_path);
+                        // TODO: do this better right now I want to know if wasm works
+                        // self.chip8.load_rom(&self.rom_path);
+                        self.chip8.load_chip8_logo();
+                        // self.chip8.load_sound_test();
                     }
                     ui.end_row();
                 });

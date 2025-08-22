@@ -21,6 +21,9 @@ chip8sys = { path = "../chip8sys/" }
 # audio
 rodio = "0.21.1"
 
+# wasm debug
+console_error_panic_hook = "*"
+
 # egui
 egui = "0.32"
 eframe = { version = "0.32", default-features = false, features = [
@@ -36,6 +39,9 @@ log = "0.4.27"
 # You only need serde if you want app persistence:
 serde = { version = "1.0.219", features = ["derive"] }
 egui_extras = "0.32.1"
+
+# random
+getrandom = {version = "0.3.3", default-features = false, features = ["wasm_js"]}
 
 # native:
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]

@@ -1,6 +1,6 @@
 use crate::chip8::Chip8Sys;
 use crate::chip8error::Chip8Error;
-use rand::prelude::*;
+use getrandom;
 
 impl Chip8Sys {
     // This will run the next command in program_counter is pointing to in Chip8Sys.memory
@@ -220,8 +220,11 @@ impl Chip8Sys {
             }
             0xC => {
                 // println!("Hit 0xCXNN - Set Vx to Random bite then AND with NN");
-                let mut rng = rand::rng();
-                self.register[b as usize] = rng.random_range(0x00..=0xFF) & Chip8Sys::nn(c, d);
+                let rng = match getrandom::u32() {
+                    Ok(r) => r,
+                    Err(e) => return Err(Chip8Error::IssueGeneratingRandomNum(e)),
+                };
+                self.register[b as usize] = ((rng & 0xFF) as u8) & Chip8Sys::nn(c, d);
             }
             0xD => {
                 // println!("Hit 0xD - Draw");

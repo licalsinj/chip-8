@@ -6,4 +6,5 @@ pub enum Chip8Error {
     Invalid0xENNN(u8, u8), // if the N in 0x8XYN is invalid it will return this and the N provided
     Invalid0xFNNN(u8, u8), // if the N in 0x8XYN is invalid it will return this and the N provided
     InvalidWaitRegister(u8), // If the register we're waiting for is somehow > 0xF
+    IssueGeneratingRandomNum(getrandom::Error), // if something goes wrong with the random number generator
 }
