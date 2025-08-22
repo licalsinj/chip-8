@@ -1,6 +1,5 @@
 #![warn(clippy::all, rust_2018_idioms)]
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")] // hide console window on Windows in release
-//
 
 extern crate console_error_panic_hook;
 use std::panic;
@@ -37,9 +36,12 @@ fn main() -> eframe::Result {
 // When compiling to web using trunk:
 #[cfg(target_arch = "wasm32")]
 fn main() {
+    // Lets me see the panic message in browser's console
     panic::set_hook(Box::new(console_error_panic_hook::hook));
+
     use eframe::wasm_bindgen::JsCast as _;
 
+    // How I pull audio for desktop. Leaving here for now so I know what to do if I need it.
     // let _stream_handle: rodio::OutputStream =
     //      rodio::OutputStreamBuilder::open_default_stream().expect("open default audio stream");
     /* let stream_handle: rodio::OutputStream = rodio::OutputStreamBuilder::from_default_device()
@@ -73,6 +75,9 @@ fn main() {
                     Ok(Box::new(chip8eframe::Chip8App::new(
                         cc,
                         Err("No Mixer".to_string()),
+                        // Tried just connecting straight to the stream to avoid borrow issues
+                        // However wasm doesn't have default audio devices...
+                        // Leaving here for reference
                         /*
                         rodio::OutputStreamBuilder::from_default_device()
                             .expect("should find default device")

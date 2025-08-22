@@ -1,6 +1,5 @@
 use crate::chip8::Chip8Sys;
 use crate::chip8error::Chip8Error;
-// use rand::prelude::*;
 use getrandom;
 
 impl Chip8Sys {

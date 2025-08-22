@@ -40,6 +40,7 @@ Ordered by how likely they are to be done (or be able to be fixed).
 - [ ] Dynamically Upload Rom
   - [ ] Roms from Memory
   - [ ] Roms from User
+  - chip8eframe/src/app.rs line 367 (reset code) needs to know which rom is being reloaded
 - [x] Compile to WASM for Demo
 - [ ] Implement Sound in WASM
 - [ ] Implement Serde

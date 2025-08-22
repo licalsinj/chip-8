@@ -631,7 +631,6 @@ version = "0.1.0"
 dependencies = [
  "chip8sys",
  "console_error_panic_hook",
- "cpal",
  "eframe",
  "egui",
  "egui_extras",
