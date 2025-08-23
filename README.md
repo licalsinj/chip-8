@@ -204,7 +204,7 @@ found myself needing to add that quirk I made it configurable.
 There are a number of enhancements that I would love to make to this CHIP-8
 emulator given more time and resources.
 
-Those enhancements can be found in the [TODO.md] file in this repository.
+Those enhancements can be found in the [TODO.md](TODO.md) file in this repository.
 
 They include but are not limited to:
 
