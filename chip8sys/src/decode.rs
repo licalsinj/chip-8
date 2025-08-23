@@ -11,7 +11,12 @@ impl Chip8Sys {
         }
         // Delay timer
         if self.delay_timer > 0 {
-            self.delay_timer -= 1;
+            // Only decrement delay time if it's been 6 cycles to match original slow clock of
+            // chip-8
+            if self.dt_cycle_ct % 6 == 0 {
+                self.delay_timer -= 1;
+            }
+            self.dt_cycle_ct += 1;
         }
         if self.sound_timer > 0 {
             self.sound_timer -= 1;
@@ -278,6 +283,7 @@ impl Chip8Sys {
                     0x15 => {
                         // // println!(" - Set Delay Timer with Reg[x]'s value");
                         self.delay_timer = self.register[b as usize];
+                        self.dt_cycle_ct = 0;
                     }
                     0x18 => {
                         // println!(" - Set Sound Timer with Reg[x]'s value");
