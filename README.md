@@ -213,10 +213,13 @@ They include but are not limited to:
 
 ## Running This Emulator
 
-TODO: Make this section accurate.
+Find the code repository of this project at:
+[Licalsinj CHIP-8 Repository](https://github.com/licalsinj/chip-8)
 
-Find the code repository of this project at: TBD
-The CHIP-8 Library can be imported as a rust crate. More info at crates.io: TBD
+### TODO: Make this section accurate
+
+The CHIP-8 Library can be imported as a rust crate.
+More info at crates.io: TBD
 View a web demo of this project at: TBD
 Download a local version to run on your own machine here:
 
