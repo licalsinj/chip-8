@@ -35,6 +35,7 @@ pub struct Chip8Sys {
     pub register: [u8; 16],
     pub register_i: u16,
     pub delay_timer: u8, // Will be used eventually
+    pub dt_cycle_ct: u128,
     pub sound_timer: u8, // Will be used eventually
     pub program_counter: u16,
     pub stack_pointer: u8, // Will be used eventually
@@ -67,6 +68,7 @@ impl Chip8Sys {
             register: EMPTY_REGISTER,
             register_i: 0,
             delay_timer: 0,
+            dt_cycle_ct: 0,
             sound_timer: 0,
             program_counter: 0x200, // initialize PC to start reading at 0x200
             stack_pointer: 0,
@@ -93,6 +95,7 @@ impl Chip8Sys {
             register: EMPTY_REGISTER,
             register_i: 0,
             delay_timer: 0,
+            dt_cycle_ct: 0,
             sound_timer: 0,
             program_counter: 0x200, // initialize PC to start reading at 0x200
             stack_pointer: 0,
