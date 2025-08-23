@@ -2,8 +2,6 @@ use core::panic;
 use std::env; // Don't remove this, you use it for debugging
 use std::fs::File;
 use std::io::Read;
-use std::sync::{mpsc, mpsc::*};
-use std::thread::JoinHandle;
 
 use crate::chip8error::Chip8Error;
 
@@ -38,6 +36,7 @@ pub struct Chip8Sys {
     pub register: [u8; 16],
     pub register_i: u16,
     pub delay_timer: u8, // Will be used eventually
+    pub cycle_count: u128,
     pub sound_timer: u8, // Will be used eventually
     pub program_counter: u16,
     pub stack_pointer: u8, // Will be used eventually
@@ -56,10 +55,6 @@ pub struct Chip8Sys {
     // quirk that modifies vx in place and ignores vy for <<= and >>= 0x8XY6 & ..E
     is_mod_vx_in_place: bool,
     // thread handle that tracks the latest thread
-    pub delay_handle: Option<JoinHandle<Result<(), Chip8Error>>>,
-    pub tx: Sender<u8>,
-    pub rx: Receiver<u8>,
-    pub temp: u32,
 }
 
 impl Chip8Sys {
@@ -70,12 +65,12 @@ impl Chip8Sys {
         is_wrap_draw: bool,
         is_mod_vx_in_place: bool,
     ) -> Chip8Sys {
-        let (tx, rx) = mpsc::channel();
         let mut new_chip_8_sys = Chip8Sys {
             memory: EMPTY_MEMORY,
             register: EMPTY_REGISTER,
             register_i: 0,
             delay_timer: 0,
+            cycle_count: 0,
             sound_timer: 0,
             program_counter: 0x200, // initialize PC to start reading at 0x200
             stack_pointer: 0,
@@ -88,10 +83,6 @@ impl Chip8Sys {
             is_register_f_reset,
             is_wrap_draw,
             is_mod_vx_in_place,
-            delay_handle: None,
-            tx,
-            rx,
-            temp: 0,
         };
         // load the font in memeory
         for i in FONT_RANGE_MIN..FONT_RANGE_MAX {
@@ -101,12 +92,12 @@ impl Chip8Sys {
     }
     // sets up a new chip 8 with default quirks for the chip 8 system
     pub fn new_chip_8() -> Chip8Sys {
-        let (tx, rx) = mpsc::channel();
         let mut new_chip_8_sys = Chip8Sys {
             memory: EMPTY_MEMORY,
             register: EMPTY_REGISTER,
             register_i: 0,
             delay_timer: 0,
+            cycle_count: 0,
             sound_timer: 0,
             program_counter: 0x200, // initialize PC to start reading at 0x200
             stack_pointer: 0,
@@ -119,10 +110,6 @@ impl Chip8Sys {
             is_register_f_reset: true,
             is_wrap_draw: false,
             is_mod_vx_in_place: false,
-            delay_handle: None,
-            tx,
-            rx,
-            temp: 0,
         };
         // load the font in memeory
         for i in FONT_RANGE_MIN..FONT_RANGE_MAX {

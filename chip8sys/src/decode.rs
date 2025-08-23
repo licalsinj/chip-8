@@ -14,11 +14,11 @@ impl Chip8Sys {
         if self.delay_timer > 0 {
             // offset by 6 cpu cycles because the Chip-8 wasn't designed to run faster than the
             // delay timer's 60Hz processor (I think...)
-            if self.temp % 6 == 0 {
+            if self.cycle_count % 6 == 0 {
                 self.delay_timer -= 1;
                 println!("delay_timer: {}", self.delay_timer);
             }
-            self.temp += 1;
+            self.cycle_count += 1;
         }
         // */
         if self.sound_timer > 0 {
@@ -288,6 +288,7 @@ impl Chip8Sys {
                         let duration = self.register[b as usize];
                         println!("Set Delay Timer with Reg[x]'s value: {}", duration);
                         self.delay_timer = duration;
+                        self.cycle_count = 0;
                     }
                     0x18 => {
                         // println!(" - Set Sound Timer with Reg[x]'s value");

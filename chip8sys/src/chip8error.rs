@@ -1,4 +1,3 @@
-use std::sync::mpsc::{SendError, TryRecvError};
 #[derive(Debug)]
 pub enum Chip8Error {
     InvalidFirstByte(u8), // if the N of 0xN___ is invalid it will return this and the N provided
@@ -8,6 +7,5 @@ pub enum Chip8Error {
     Invalid0xFNNN(u8, u8), // if the N in 0x8XYN is invalid it will return this and the N provided
     InvalidWaitRegister(u8), // If the register we're waiting for is somehow > 0xF
     IssueGeneratingRandomNum(getrandom::Error), // if something goes wrong with the random number generator
-    ThreadError(SendError<u8>),
-    TimerReceiveError(TryRecvError),
+    UnknownError(String),
 }
