@@ -2,7 +2,7 @@ use crate::chip8::Chip8Sys;
 use crate::chip8error::Chip8Error;
 use getrandom;
 use std::thread;
-use std::time::Duration;
+use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 impl Chip8Sys {
     // This will run the next command in program_counter is pointing to in Chip8Sys.memory
@@ -27,11 +27,34 @@ impl Chip8Sys {
         // */
         // /*
         if self.delay_timer > 0 {
-            if self.temp % 6 == 0 {
-                self.delay_timer -= 1;
-                println!("delay_timer: {}", self.delay_timer);
+            // get the current time 
+            let curr_time = SystemTime::now()
+                .duration_since(UNIX_EPOCH)
+                .expect("time should go forward")
+                .as_nanos();
+            println!("curr_time: {:?}", curr_time);
+            // compare it to the time we started/last updated
+            let passed_time = curr_time - self.dt_start;
+            println!("passed_time: {:?}", passed_time);
+            // if it's been over 16_666_666 nanosecs (60 Hz) then 
+            if passed_time > 16_666_666 {
+                let dec = 
+                    // decrease the delay timer by the number of 60hz cycles that have past
+                    ((f32::floor(passed_time as f32 / 16666666.0) as usize) & 0xFF) as u8;
+                println!("dec: {}", dec);
+                // take into account the bit that we chopped off with the floor rounding
+                // let slop = passed_time as i128 - (dec as i128 * 16666666);
+                // make sure that dec isn't going to make delay_timer go negative
+                if dec < self.delay_timer {
+                    self.delay_timer -= dec;
+                } else {
+                    self.delay_timer = 0;
+                }
+                println!("delay_timer: {}",self.delay_timer);
+                // and then reset the time we last checked for the next cpu cycle
+                self.dt_start = self.dt_start + (dec as u128 * 16_666_666);
+                println!("dt_start: {}", self.dt_start);
             }
-            self.temp += 1;
         }
         // */
         if self.sound_timer > 0 {
@@ -60,7 +83,7 @@ impl Chip8Sys {
         // println!("d: {:x}", d);
         // println!("PC inc: {:x}", self.program_counter);
         // */
-        println!("Command: 0x{:X}{:X}{:X}{:X}", a, b, c, d);
+        // println!("Command: 0x{:X}{:X}{:X}{:X}", a, b, c, d);
         // Implement the Instructions for the Chip-8
         match a {
             0x0 => {
@@ -289,6 +312,11 @@ impl Chip8Sys {
                     0x07 => {
                         println!("Load reg[x] with delay timer {}", self.delay_timer);
                         self.register[b as usize] = self.delay_timer;
+                        self.dt_start = SystemTime::now()
+                            .duration_since(UNIX_EPOCH)
+                            .expect("time should go forward")
+                            .as_nanos();
+                        // println!("{:?}", self.dt_start);
                     }
                     0x0A => {
                         // println!(" - Wait for key press");

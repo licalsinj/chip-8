@@ -59,7 +59,7 @@ pub struct Chip8Sys {
     pub delay_handle: Option<JoinHandle<Result<(), Chip8Error>>>,
     pub tx: Sender<u8>,
     pub rx: Receiver<u8>,
-    pub temp: u32,
+    pub dt_start: u128,
 }
 
 impl Chip8Sys {
@@ -91,7 +91,7 @@ impl Chip8Sys {
             delay_handle: None,
             tx,
             rx,
-            temp: 0,
+            dt_start: 0,
         };
         // load the font in memeory
         for i in FONT_RANGE_MIN..FONT_RANGE_MAX {
@@ -122,7 +122,7 @@ impl Chip8Sys {
             delay_handle: None,
             tx,
             rx,
-            temp: 0,
+            dt_start: 0,
         };
         // load the font in memeory
         for i in FONT_RANGE_MIN..FONT_RANGE_MAX {
