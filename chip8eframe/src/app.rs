@@ -6,7 +6,6 @@ use egui::{Color32, Key};
 use egui_extras::{Column, TableBuilder};
 use rodio::mixer::Mixer;
 use rodio::source::{SineWave, Source};
-use std::time::Duration;
 
 use crate::about::About;
 
@@ -216,7 +215,7 @@ impl eframe::App for Chip8App {
                     col += 1.0;
                 }
             }
-            ctx.request_repaint_after(Duration::from_nanos(16666666));
+            ctx.request_repaint();
         });
 
         egui::SidePanel::right("Config Toggle").show(ctx, |ui| {
