@@ -1,8 +1,6 @@
 use crate::chip8::Chip8Sys;
 use crate::chip8error::Chip8Error;
 use getrandom;
-use std::thread;
-use std::time::Duration;
 
 impl Chip8Sys {
     // This will run the next command in program_counter is pointing to in Chip8Sys.memory
@@ -12,21 +10,10 @@ impl Chip8Sys {
             return Ok(());
         }
         // Delay timer
-        /*
-        match self.delay_handle {
-            Some(_) => match self.rx.try_recv() {
-                Ok(val) => self.delay_timer = val,
-                Err(_e) => {
-                    ()
-                    // println!("Try_recv error {:?}", e);
-                    //return Err(Chip8Error::TimerReceiveError(e));
-                }
-            },
-            None => (),
-        }
-        // */
         // /*
         if self.delay_timer > 0 {
+            // offset by 6 cpu cycles because the Chip-8 wasn't designed to run faster than the
+            // delay timer's 60Hz processor (I think...)
             if self.temp % 6 == 0 {
                 self.delay_timer -= 1;
                 println!("delay_timer: {}", self.delay_timer);
@@ -301,29 +288,6 @@ impl Chip8Sys {
                         let duration = self.register[b as usize];
                         println!("Set Delay Timer with Reg[x]'s value: {}", duration);
                         self.delay_timer = duration;
-                        /*
-                        let thread_tx = self.tx.clone();
-                        self.delay_handle = Some(thread::spawn(move || {
-                            let mut i = duration;
-                            loop {
-                                println!("Thread i: {}", i);
-                                i -= 1;
-                                match thread_tx.send(i) {
-                                    // I'm not exactly sure how to handle errors here
-                                    // Maybe I'm supposed to store these result errors in the
-                                    // handle then check the handle at the top/bottom of this
-                                    // method and return them?
-                                    Err(e) => return Err(Chip8Error::ThreadError(e)),
-                                    Ok(_) => (),
-                                }
-                                thread::sleep(Duration::from_nanos(16666666));
-                                if i == 0 {
-                                    break;
-                                }
-                            }
-                            Ok(())
-                        }));
-                        // */
                     }
                     0x18 => {
                         // println!(" - Set Sound Timer with Reg[x]'s value");

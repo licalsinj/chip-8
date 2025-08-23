@@ -103,7 +103,7 @@ impl Chip8App {
         // result.chip8.load_rom("roms/3-corax+.ch8".to_string());
         result.rom_path = "roms/5-quirks.ch8".to_string();
         // When running quirks rom hardcode this memory spot to auto run Chip-8
-        // result.chip8.memory[0x1FF] = 1;
+        result.chip8.memory[0x1FF] = 1;
         // result.rom_path = "roms/walking_man.ch8".to_string();
         // result.rom_path = "../roms/7-beep.ch8".to_string();
 
