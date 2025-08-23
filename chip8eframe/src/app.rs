@@ -6,6 +6,7 @@ use egui::{Color32, Key};
 use egui_extras::{Column, TableBuilder};
 use rodio::mixer::Mixer;
 use rodio::source::{SineWave, Source};
+use std::time::Duration;
 
 use crate::about::About;
 
@@ -34,7 +35,7 @@ impl Default for Chip8App {
         Self {
             // Example stuff:
             chip8: Chip8Sys::new_chip_8(),
-            zoom: 20.0,
+            zoom: 15.0,
             background_color: Color32::BLACK,
             pixel_color: Color32::GREEN,
             key_map: [
@@ -62,7 +63,7 @@ impl Default for Chip8App {
             },
             compute_info: ConfigWindow {
                 name: String::from("Compute Info"),
-                show: false,
+                show: true,
             },
             about: ConfigWindow {
                 name: String::from("About Chip-8"),
@@ -73,7 +74,7 @@ impl Default for Chip8App {
                 name: String::from("Control Flow"),
                 show: true,
             },
-            run: false,
+            run: true,
             single_step: false,
             rom_path: String::new(),
         }
@@ -100,14 +101,14 @@ impl Chip8App {
         // result.rom_path = "roms/1-chip8-logo.ch8".to_string();
         // result.chip8.load_rom("roms/2-ibm-logo.ch8".to_string());
         // result.chip8.load_rom("roms/3-corax+.ch8".to_string());
-        // result.chip8.load_rom("roms/5-quirks.ch8".to_string());
+        result.rom_path = "roms/5-quirks.ch8".to_string();
         // When running quirks rom hardcode this memory spot to auto run Chip-8
         // result.chip8.memory[0x1FF] = 1;
-        // result.chip8.load_rom("roms/walking_man.ch8".to_string());
+        // result.rom_path = "roms/walking_man.ch8".to_string();
         // result.rom_path = "../roms/7-beep.ch8".to_string();
 
-        // result.chip8.load_rom(&result.rom_path);
-        result.chip8.load_chip8_logo();
+        result.chip8.load_rom(&result.rom_path);
+        // result.chip8.load_chip8_logo();
         // result.chip8.load_sound_test();
         //
 
@@ -160,6 +161,7 @@ impl eframe::App for Chip8App {
                     // If the register we're waiting for is somehow > 0xF
                     Chip8Error::InvalidWaitRegister(_) => (),
                     Chip8Error::IssueGeneratingRandomNum(_) => (),
+                    _ => (),
                 },
             }
             if self.single_step {
@@ -214,7 +216,7 @@ impl eframe::App for Chip8App {
                     col += 1.0;
                 }
             }
-            ctx.request_repaint();
+            ctx.request_repaint_after(Duration::from_nanos(16666666));
         });
 
         egui::SidePanel::right("Config Toggle").show(ctx, |ui| {
@@ -249,6 +251,9 @@ impl eframe::App for Chip8App {
                     });
                     ui.horizontal(|ui| {
                         ui.label(format!("Stack Pointer: {}", &self.chip8.stack_pointer));
+                    });
+                    ui.horizontal(|ui| {
+                        ui.label(format!("Delay Timer: {}", &self.chip8.delay_timer));
                     });
                     ui.separator();
                     let available_height = ui.available_height();
@@ -363,8 +368,9 @@ impl eframe::App for Chip8App {
                         // TODO: Take into account quirks
                         self.chip8 = Chip8Sys::new_chip_8();
                         // TODO: do this better right now I want to know if wasm works
-                        // self.chip8.load_rom(&self.rom_path);
-                        self.chip8.load_chip8_logo();
+                        self.chip8.load_rom(&self.rom_path);
+                        self.chip8.memory[0x1FF] = 1;
+                        // self.chip8.load_chip8_logo();
                         // self.chip8.load_sound_test();
                     }
                     ui.end_row();
