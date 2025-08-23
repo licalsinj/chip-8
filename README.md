@@ -236,4 +236,5 @@ Download a local version to run on your own machine here:
 ## About Me
 
 This Chip-8 Emulator is created by Nicholas Licalsi.
+
 Find more of my projects at: Github.com/licalsinj
