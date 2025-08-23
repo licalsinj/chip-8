@@ -8,24 +8,17 @@ Ordered by how likely they are to be done (or be able to be fixed).
 
 - [x] Convert this to a library instead of a binary
 - [x] Have Chip8Sys::run() return Result<(),Err>
-- [ ] Improve error codes
-  - Invalid first byte
-  - Invalid op code
-  - Maybe even imbbed a String explaination...
-- [ ] Implement delay and sound timer on their own threads
+- [x] Update README.md
+- [ ] Implement delay and sound timer so they pass tests
 - [ ] Fix Flashing from Clear Screen actions
   - Looking at the code this seems to use the delay timer to keep flashing down
   - And my delay timer is off so it's constantly redrawing.
 - [ ] Get Controls to be more responsive
   - Watching it through eframe it's like the chip8sys library is overwriting
       what I'm sending it it at first.
-- [ ] Get Serde working for Chip8Sys
-- [ ] Move the About::chip_8_decode into the Chip8Sys library
-  - and take into account current quirks.
-  - Could be good to have a global command lookup impl without &self
-  - And one impl with &self taking into account quirks
+- [ ] Finalize README.md
 
-  ### egui Presenter
+### egui Presenter
 
 - [x] Get Screen to Appear
 - [x] Display Inside Registers & such
@@ -36,14 +29,13 @@ Ordered by how likely they are to be done (or be able to be fixed).
   - I think I should do this in a left pane like egui demo
 - [x] Run, Pause, Step Buttons
 - [x] Restart Button
-- [ ] Configure Quirks
-- [ ] Dynamically Upload Rom
-  - [ ] Roms from Memory
-  - [ ] Roms from User
-  - chip8eframe/src/app.rs line 367 (reset code) needs to know which rom is being reloaded
 - [x] Compile to WASM for Demo
+- [ ] Configure Quirks
+- [ ] Dynamically Change Roms
+  - chip8eframe/src/app.rs line 367 (reset code) needs to know
+      which rom is being reloaded
 - [ ] Implement Sound in WASM
-- [ ] Implement Serde
+- [ ] Update About Page
 
 #### About Page
 
@@ -54,11 +46,23 @@ Info that I need on the about page:
 - [ ] How to control the Chip-8
 - [ ] Where to learn more about me
 
-#### Stretch Goals
+### Stretch Goals
+
+#### Library Stretch Goals
+
+- [ ] Get Serde working for Chip8Sys struct
+- [ ] Move the About::chip_8_decode into the Chip8Sys library
+  - and take into account current quirks.
+  - Could be good to have a global command lookup impl without &self
+  - And one impl with &self taking into account quirks
+
+#### Presenter Stretch Goals
 
 - [x] Get Screen to Dynamically Scale
-- [ ] Make Sound Frequency Configurable
 - [x] Make Pixel Color Configurable
+- [ ] Upload Roms from User
+- [ ] Implement Serde (Dependent on Lib implementing Serde)
+- [ ] Make Sound Frequency Configurable
 - [ ] Export Save States
 - [ ] Make Keyboard keys Configurable
 - [ ] Build a lookup table for commands to print on Control Flow Window
