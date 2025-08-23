@@ -12,7 +12,7 @@ Ordered by how likely they are to be done (or be able to be fixed).
   - Invalid first byte
   - Invalid op code
   - Maybe even imbbed a String explaination...
-- [ ] Implement delay and sound timer on their own threads?
+- [ ] Implement delay and sound timer on their own threads
 - [ ] Fix Flashing from Clear Screen actions
   - Looking at the code this seems to use the delay timer to keep flashing down
   - And my delay timer is off so it's constantly redrawing.
