@@ -403,7 +403,7 @@ impl Chip8Sys {
             // println!("new     : {:08b}", self.frame_buffer[fb_chunk_index_next as usize]);
             // println!("flag    : {:08b}", flag_for_next);
             if (flag_for_index != 0) | (flag_for_next != 0) {
-                // println!("VF SET: index: {}, next: {}", flag_for_index, flag_for_next);
+                println!("VF SET: index: {}, next: {}", flag_for_index, flag_for_next);
                 self.register[0xF] = 1;
             }
             // increment Y
