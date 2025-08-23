@@ -47,7 +47,7 @@ impl Chip8Sys {
         // println!("d: {:x}", d);
         // println!("PC inc: {:x}", self.program_counter);
         // */
-        println!("Command: 0x{:X}{:X}{:X}{:X}", a, b, c, d);
+
         // Implement the Instructions for the Chip-8
         match a {
             0x0 => {
