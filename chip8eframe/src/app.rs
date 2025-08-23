@@ -34,7 +34,7 @@ impl Default for Chip8App {
         Self {
             // Example stuff:
             chip8: Chip8Sys::new_chip_8(),
-            zoom: 20.0,
+            zoom: 15.0,
             background_color: Color32::BLACK,
             pixel_color: Color32::GREEN,
             key_map: [
@@ -62,7 +62,7 @@ impl Default for Chip8App {
             },
             compute_info: ConfigWindow {
                 name: String::from("Compute Info"),
-                show: false,
+                show: true,
             },
             about: ConfigWindow {
                 name: String::from("About Chip-8"),
@@ -73,7 +73,7 @@ impl Default for Chip8App {
                 name: String::from("Control Flow"),
                 show: true,
             },
-            run: false,
+            run: true,
             single_step: false,
             rom_path: String::new(),
         }
